@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { Product, ProductVariant } from '@/types';
 import { Button } from '@/components/ui/Button';
-import { ShoppingBag, Check } from 'lucide-react';
+import { ShoppingBag, Check, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/store/cart';
 import toast from 'react-hot-toast';
+import { calculateDiscount } from '@/lib/pricing';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -20,6 +22,8 @@ export default function ProductDetailPage() {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [quantity, setQuantity] = useState(1);
   const addItem = useCartStore((state) => state.addItem);
+
+  const pricing = product ? calculateDiscount(product) : null;
 
   useEffect(() => {
     fetchProduct();
@@ -34,7 +38,8 @@ export default function ProductDetailPage() {
         *,
         images:product_images(*),
         variants:product_variants(*),
-        category:categories(*)
+        category:categories(*),
+        discount:discounts(*)
       `)
       .eq('slug', slug)
       .eq('active', true)
@@ -57,9 +62,46 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!product) return;
     addItem(product, selectedVariant || undefined, quantity);
-    toast.success(`Added ${quantity} item(s) to cart!`, {
-      duration: 2000,
-      position: 'bottom-center',
+    toast.custom((t) => (
+      <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
+        <div className="flex-1 w-0 p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0 pt-0.5">
+              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <div className="ml-3 flex-1">
+              <p className="text-sm font-medium text-gray-900">
+                Added to cart!
+              </p>
+              <p className="mt-1 text-sm text-gray-500">
+                {quantity} × {product.title} added to your cart
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Link href="/cart" onClick={() => toast.dismiss(t.id)}>
+                  <button className="text-sm font-medium text-neutral-900 hover:text-neutral-700 underline">
+                    View cart & checkout →
+                  </button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex border-l border-gray-200">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-gray-700 hover:text-gray-500 focus:outline-none"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: 4000,
+      position: 'bottom-right',
     });
   };
 
@@ -158,8 +200,31 @@ export default function ProductDetailPage() {
               <h1 className="text-4xl font-display font-bold text-neutral-900 mb-4">
                 {product.title}
               </h1>
-              <div className="text-3xl font-bold text-neutral-900">
-                {currentPrice.toFixed(2)} {product.currency}
+
+              {/* Price with Discount */}
+              <div className="flex items-center gap-3">
+                {pricing?.hasDiscount ? (
+                  <>
+                    <div className="text-3xl font-bold text-red-600">
+                      {pricing.discountedPrice.toFixed(2)} {product.currency}
+                    </div>
+                    <div className="text-2xl text-neutral-500 line-through">
+                      {pricing.originalPrice.toFixed(2)} {product.currency}
+                    </div>
+                    {pricing.discount && (
+                      <div className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+                        <Tag size={14} />
+                        {pricing.discount.discount_type === 'percentage'
+                          ? `-${pricing.discount.value}%`
+                          : `-${pricing.discount.value} ${product.currency}`}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-3xl font-bold text-neutral-900">
+                    {currentPrice.toFixed(2)} {product.currency}
+                  </div>
+                )}
               </div>
             </div>
 

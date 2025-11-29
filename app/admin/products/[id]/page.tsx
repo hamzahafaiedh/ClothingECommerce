@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { ImageUpload } from '@/components/admin/ImageUpload';
@@ -9,9 +9,13 @@ import { ArrowLeft, Plus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
-export default function NewProductPage() {
+export default function EditProductPage() {
   const router = useRouter();
+  const params = useParams();
+  const productId = params.id as string;
+
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [categories, setCategories] = useState<any[]>([]);
   const [discounts, setDiscounts] = useState<any[]>([]);
   const [formData, setFormData] = useState({
@@ -25,20 +29,21 @@ export default function NewProductPage() {
     active: true,
   });
   const [images, setImages] = useState<string[]>(['']);
-  const [variants, setVariants] = useState<Array<{ name: string; price: string; stock: string }>>([
+  const [variants, setVariants] = useState<Array<{ id?: string; name: string; price: string; stock: string }>>([
     { name: '', price: '', stock: '0' },
   ]);
 
   useEffect(() => {
+    fetchProduct();
     fetchCategories();
     fetchDiscounts();
-  }, []);
+  }, [productId]);
 
   async function fetchCategories() {
     const { data } = await supabase
       .from('categories')
       .select('id, name')
-      .order('name', { ascending: true });
+      .order('name', { ascending: true});
 
     if (data) {
       setCategories(data);
@@ -57,11 +62,57 @@ export default function NewProductPage() {
     }
   }
 
+  async function fetchProduct() {
+    setFetching(true);
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        images:product_images(*),
+        variants:product_variants(*)
+      `)
+      .eq('id', productId)
+      .single();
+
+    if (error || !data) {
+      toast.error('Product not found');
+      router.push('/admin/products');
+      return;
+    }
+
+    setFormData({
+      title: data.title,
+      slug: data.slug,
+      description: data.description || '',
+      price: data.price.toString(),
+      currency: data.currency,
+      category_id: data.category_id || '',
+      discount_id: data.discount_id || '',
+      active: data.active,
+    });
+
+    if (data.images && data.images.length > 0) {
+      setImages(data.images.sort((a: any, b: any) => a.order - b.order).map((img: any) => img.url));
+    }
+
+    if (data.variants && data.variants.length > 0) {
+      setVariants(
+        data.variants.map((v: any) => ({
+          id: v.id,
+          name: v.name,
+          price: v.price?.toString() || '',
+          stock: v.stock.toString(),
+        }))
+      );
+    }
+
+    setFetching(false);
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
 
-    // Auto-generate slug from title
     if (name === 'title') {
       const slug = value
         .toLowerCase()
@@ -96,31 +147,31 @@ export default function NewProductPage() {
     setLoading(true);
 
     try {
-      // Create product
-      const { data: product, error: productError } = await supabase
+      // Update product
+      const { error: productError } = await supabase
         .from('products')
-        .insert([
-          {
-            title: formData.title,
-            slug: formData.slug,
-            description: formData.description,
-            price: parseFloat(formData.price),
-            currency: formData.currency,
-            category_id: formData.category_id || null,
-            discount_id: formData.discount_id || null,
-            active: formData.active,
-          },
-        ])
-        .select()
-        .single();
+        .update({
+          title: formData.title,
+          slug: formData.slug,
+          description: formData.description,
+          price: parseFloat(formData.price),
+          currency: formData.currency,
+          category_id: formData.category_id || null,
+          discount_id: formData.discount_id || null,
+          active: formData.active,
+        })
+        .eq('id', productId);
 
       if (productError) throw productError;
 
-      // Add images
+      // Delete old images
+      await supabase.from('product_images').delete().eq('product_id', productId);
+
+      // Add new images
       const validImages = images.filter((img) => img.trim() !== '');
       if (validImages.length > 0) {
         const imageInserts = validImages.map((url, index) => ({
-          product_id: product.id,
+          product_id: productId,
           url,
           order: index,
         }));
@@ -132,32 +183,62 @@ export default function NewProductPage() {
         if (imagesError) throw imagesError;
       }
 
-      // Add variants
+      // Handle variants
+      const existingVariantIds = variants.filter((v) => v.id).map((v) => v.id);
+
+      // Delete removed variants
+      if (existingVariantIds.length > 0) {
+        await supabase
+          .from('product_variants')
+          .delete()
+          .eq('product_id', productId)
+          .not('id', 'in', `(${existingVariantIds.join(',')})`);
+      } else {
+        await supabase.from('product_variants').delete().eq('product_id', productId);
+      }
+
+      // Update/Insert variants
       const validVariants = variants.filter((v) => v.name.trim() !== '');
-      if (validVariants.length > 0) {
-        const variantInserts = validVariants.map((variant) => ({
-          product_id: product.id,
+      for (const variant of validVariants) {
+        const variantData = {
+          product_id: productId,
           name: variant.name,
           price: variant.price ? parseFloat(variant.price) : null,
           stock: parseInt(variant.stock) || 0,
-        }));
+        };
 
-        const { error: variantsError } = await supabase
-          .from('product_variants')
-          .insert(variantInserts);
-
-        if (variantsError) throw variantsError;
+        if (variant.id) {
+          // Update existing
+          await supabase
+            .from('product_variants')
+            .update(variantData)
+            .eq('id', variant.id);
+        } else {
+          // Insert new
+          await supabase.from('product_variants').insert([variantData]);
+        }
       }
 
-      toast.success('Product created successfully!');
+      toast.success('Product updated successfully!');
       router.push('/admin/products');
     } catch (error: any) {
-      console.error('Error creating product:', error);
-      toast.error(error.message || 'Failed to create product');
+      console.error('Error updating product:', error);
+      toast.error(error.message || 'Failed to update product');
     } finally {
       setLoading(false);
     }
   };
+
+  if (fetching) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-neutral-200 border-t-neutral-900 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-neutral-600">Loading product...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl">
@@ -169,7 +250,7 @@ export default function NewProductPage() {
           </Button>
         </Link>
         <h1 className="text-3xl font-display font-bold text-neutral-900">
-          Add New Product
+          Edit Product
         </h1>
       </div>
 
@@ -207,9 +288,6 @@ export default function NewProductPage() {
                 className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
                 required
               />
-              <p className="text-xs text-neutral-500 mt-1">
-                Auto-generated from title, but you can customize it
-              </p>
             </div>
 
             <div>
@@ -377,15 +455,12 @@ export default function NewProductPage() {
               </div>
             ))}
           </div>
-          <p className="text-xs text-neutral-500 mt-2">
-            Leave price empty to use the base product price
-          </p>
         </div>
 
         {/* Submit */}
         <div className="flex gap-4">
           <Button type="submit" size="lg" isLoading={loading}>
-            Create Product
+            Save Changes
           </Button>
           <Link href="/admin/products">
             <Button type="button" variant="outline" size="lg">

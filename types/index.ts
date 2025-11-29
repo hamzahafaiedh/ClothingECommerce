@@ -6,6 +6,7 @@ export interface Product {
   price: number;
   currency: string;
   category_id: string | null;
+  discount_id: string | null;
   active: boolean;
   metadata: Record<string, any>;
   created_at: string;
@@ -13,6 +14,19 @@ export interface Product {
   images?: ProductImage[];
   variants?: ProductVariant[];
   category?: Category;
+  discount?: Discount;
+}
+
+export interface Discount {
+  id: string;
+  code: string | null;
+  description: string | null;
+  discount_type: 'percentage' | 'fixed';
+  value: number;
+  active: boolean;
+  starts_at: string | null;
+  expires_at: string | null;
+  created_at: string;
 }
 
 export interface ProductImage {
@@ -50,6 +64,12 @@ export interface CartItem {
   product: Product;
   variant?: ProductVariant;
   quantity: number;
+}
+
+export interface AppliedDiscount {
+  code: string;
+  discount: Discount;
+  amount: number;
 }
 
 export interface Customer {

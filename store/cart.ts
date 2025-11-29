@@ -1,19 +1,24 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { CartItem, Product, ProductVariant } from '@/types';
+import { CartItem, Product, ProductVariant, AppliedDiscount } from '@/types';
 
 interface CartStore {
   items: CartItem[];
+  appliedDiscount: AppliedDiscount | null;
   addItem: (product: Product, variant?: ProductVariant, quantity?: number) => void;
   removeItem: (productId: string, variantId?: string) => void;
   updateQuantity: (productId: string, quantity: number, variantId?: string) => void;
   clearCart: () => void;
   getTotal: () => number;
   getItemCount: () => number;
+  applyDiscount: (discount: AppliedDiscount) => void;
+  removeDiscount: () => void;
+  hasProductWithDiscount: () => boolean;
 }
 
 const cartStore = (set: any, get: any) => ({
   items: [],
+  appliedDiscount: null,
 
   addItem: (product: Product, variant?: ProductVariant, quantity = 1) => {
     set((state: CartStore) => {
@@ -59,7 +64,7 @@ const cartStore = (set: any, get: any) => ({
     }));
   },
 
-  clearCart: () => set({ items: [] }),
+  clearCart: () => set({ items: [], appliedDiscount: null }),
 
   getTotal: () => {
     const items = get().items;
@@ -72,6 +77,15 @@ const cartStore = (set: any, get: any) => ({
   getItemCount: () => {
     const items = get().items;
     return items.reduce((count: number, item: CartItem) => count + item.quantity, 0);
+  },
+
+  applyDiscount: (discount: AppliedDiscount) => set({ appliedDiscount: discount }),
+
+  removeDiscount: () => set({ appliedDiscount: null }),
+
+  hasProductWithDiscount: () => {
+    const items = get().items;
+    return items.some((item: CartItem) => item.product.discount);
   },
 });
 

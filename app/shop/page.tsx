@@ -41,7 +41,8 @@ function ShopContent() {
         *,
         images:product_images(*),
         variants:product_variants(*),
-        category:categories(*)
+        category:categories(*),
+        discount:discounts(*)
       `)
       .eq('active', true);
 

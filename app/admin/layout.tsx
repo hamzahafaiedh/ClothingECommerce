@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, ShoppingCart, LayoutDashboard, Settings } from 'lucide-react';
+import { Package, ShoppingCart, LayoutDashboard, Settings, Tag, Percent } from 'lucide-react';
 
 export default function AdminLayout({
   children,
@@ -14,6 +14,8 @@ export default function AdminLayout({
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Products', href: '/admin/products', icon: Package },
+    { name: 'Categories', href: '/admin/categories', icon: Tag },
+    { name: 'Discounts', href: '/admin/discounts', icon: Percent },
     { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];

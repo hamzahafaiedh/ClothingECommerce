@@ -1,16 +1,78 @@
 'use client';
 
+import { useState } from 'react';
 import { useCartStore } from '@/store/cart';
+import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
-import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, Tag, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { Discount } from '@/types';
+import { calculateDiscountCodeAmount } from '@/lib/pricing';
 
 export default function CartPage() {
-  const { items, updateQuantity, removeItem, getTotal } = useCartStore();
+  const { items, updateQuantity, removeItem, getTotal, appliedDiscount, applyDiscount, removeDiscount } = useCartStore();
+  const [discountCode, setDiscountCode] = useState('');
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
+
   const total = getTotal();
+  const discountAmount = appliedDiscount ? appliedDiscount.amount : 0;
+  const subtotalAfterDiscount = total - discountAmount;
+  const shippingCost = subtotalAfterDiscount > 100 ? 0 : 7;
+  const grandTotal = subtotalAfterDiscount + shippingCost;
   const currency = items[0]?.product.currency || 'TND';
+
+  const handleApplyDiscount = async () => {
+    if (!discountCode.trim()) {
+      toast.error('Please enter a discount code');
+      return;
+    }
+
+    setApplyingDiscount(true);
+    try {
+      const { data, error } = await supabase
+        .from('discounts')
+        .select('*')
+        .eq('code', discountCode.trim())
+        .eq('active', true)
+        .single();
+
+      if (error || !data) {
+        toast.error('Invalid discount code');
+        return;
+      }
+
+      const discount = data as Discount;
+      const now = new Date();
+
+      if (discount.starts_at && new Date(discount.starts_at) > now) {
+        toast.error('This discount is not yet active');
+        return;
+      }
+
+      if (discount.expires_at && new Date(discount.expires_at) < now) {
+        toast.error('This discount has expired');
+        return;
+      }
+
+      const amount = calculateDiscountCodeAmount(total, discount);
+      applyDiscount({ code: discountCode.trim(), discount, amount });
+      toast.success(`Discount applied: ${discount.discount_type === 'percentage' ? `${discount.value}%` : `${discount.value} ${currency}`} off`);
+      setDiscountCode('');
+    } catch (error) {
+      console.error('Error applying discount:', error);
+      toast.error('Failed to apply discount code');
+    } finally {
+      setApplyingDiscount(false);
+    }
+  };
+
+  const handleRemoveDiscount = () => {
+    removeDiscount();
+    toast.success('Discount removed');
+  };
 
   if (items.length === 0) {
     return (
@@ -137,14 +199,73 @@ export default function CartPage() {
                   <span>Subtotal</span>
                   <span>{total.toFixed(2)} {currency}</span>
                 </div>
+
+                {/* Discount Code Section */}
+                <div className="py-2">
+                  {appliedDiscount ? (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <Tag size={16} className="text-green-600" />
+                          <span className="text-sm font-medium text-green-900">
+                            {appliedDiscount.code}
+                          </span>
+                        </div>
+                        <button
+                          onClick={handleRemoveDiscount}
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                      <div className="text-xs text-green-700">
+                        {appliedDiscount.discount.discount_type === 'percentage'
+                          ? `${appliedDiscount.discount.value}% off`
+                          : `${appliedDiscount.discount.value} ${currency} off`}
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Discount Code
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={discountCode}
+                          onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                          onKeyPress={(e) => e.key === 'Enter' && handleApplyDiscount()}
+                          placeholder="Enter code"
+                          className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={handleApplyDiscount}
+                          isLoading={applyingDiscount}
+                          disabled={!discountCode.trim()}
+                        >
+                          Apply
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {appliedDiscount && (
+                  <div className="flex items-center justify-between text-green-600 font-medium">
+                    <span>Discount</span>
+                    <span>-{discountAmount.toFixed(2)} {currency}</span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between text-neutral-600">
                   <span>Shipping</span>
-                  <span>{total > 100 ? 'Free' : '7.00 ' + currency}</span>
+                  <span>{shippingCost === 0 ? 'Free' : shippingCost.toFixed(2) + ' ' + currency}</span>
                 </div>
                 <div className="border-t border-neutral-200 pt-3">
                   <div className="flex items-center justify-between text-lg font-semibold text-neutral-900">
                     <span>Total</span>
-                    <span>{(total + (total > 100 ? 0 : 7)).toFixed(2)} {currency}</span>
+                    <span>{grandTotal.toFixed(2)} {currency}</span>
                   </div>
                 </div>
               </div>
@@ -161,9 +282,9 @@ export default function CartPage() {
                 </Button>
               </Link>
 
-              {total < 100 && (
+              {subtotalAfterDiscount < 100 && (
                 <p className="text-sm text-neutral-600 mt-4 text-center">
-                  Add {(100 - total).toFixed(2)} {currency} more for free shipping
+                  Add {(100 - subtotalAfterDiscount).toFixed(2)} {currency} more for free shipping
                 </p>
               )}
             </div>

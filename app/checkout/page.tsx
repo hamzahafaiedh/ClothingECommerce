@@ -5,14 +5,17 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
-import { Customer } from '@/types';
-import { MessageCircle, CreditCard } from 'lucide-react';
+import { Customer, Discount } from '@/types';
+import { MessageCircle, CreditCard, Tag, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { calculateDiscountCodeAmount } from '@/lib/pricing';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, getTotal, clearCart } = useCartStore();
+  const { items, getTotal, clearCart, appliedDiscount, applyDiscount, removeDiscount } = useCartStore();
   const [loading, setLoading] = useState(false);
+  const [discountCode, setDiscountCode] = useState('');
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
   const [formData, setFormData] = useState<Customer>({
     full_name: '',
     phone: '',
@@ -26,8 +29,10 @@ export default function CheckoutPage() {
   });
 
   const total = getTotal();
-  const shippingCost = total > 100 ? 0 : 7;
-  const grandTotal = total + shippingCost;
+  const discountAmount = appliedDiscount ? appliedDiscount.amount : 0;
+  const subtotalAfterDiscount = total - discountAmount;
+  const shippingCost = subtotalAfterDiscount > 100 ? 0 : 7;
+  const grandTotal = subtotalAfterDiscount + shippingCost;
   const currency = items[0]?.product.currency || 'TND';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,6 +49,56 @@ export default function CheckoutPage() {
     } else {
       setFormData({ ...formData, [name]: value });
     }
+  };
+
+  const handleApplyDiscount = async () => {
+    if (!discountCode.trim()) {
+      toast.error('Please enter a discount code');
+      return;
+    }
+
+    setApplyingDiscount(true);
+    try {
+      const { data, error } = await supabase
+        .from('discounts')
+        .select('*')
+        .eq('code', discountCode.trim())
+        .eq('active', true)
+        .single();
+
+      if (error || !data) {
+        toast.error('Invalid discount code');
+        return;
+      }
+
+      const discount = data as Discount;
+      const now = new Date();
+
+      if (discount.starts_at && new Date(discount.starts_at) > now) {
+        toast.error('This discount is not yet active');
+        return;
+      }
+
+      if (discount.expires_at && new Date(discount.expires_at) < now) {
+        toast.error('This discount has expired');
+        return;
+      }
+
+      const amount = calculateDiscountCodeAmount(total, discount);
+      applyDiscount({ code: discountCode.trim(), discount, amount });
+      toast.success(`Discount applied: ${discount.discount_type === 'percentage' ? `${discount.value}%` : `${discount.value} ${currency}`} off`);
+      setDiscountCode('');
+    } catch (error) {
+      console.error('Error applying discount:', error);
+      toast.error('Failed to apply discount code');
+    } finally {
+      setApplyingDiscount(false);
+    }
+  };
+
+  const handleRemoveDiscount = () => {
+    removeDiscount();
+    toast.success('Discount removed');
   };
 
   const createOrder = async () => {
@@ -67,18 +122,22 @@ export default function CheckoutPage() {
       if (customerError) throw customerError;
 
       // Create order
+      const orderData: any = {
+        customer_id: customer.id,
+        status: 'pending',
+        total: grandTotal,
+        currency,
+        payment_method: 'whatsapp',
+        shipping: formData.address,
+      };
+
+      if (appliedDiscount) {
+        orderData.notes = `Discount Code Applied: ${appliedDiscount.code} (${appliedDiscount.discount.discount_type === 'percentage' ? `${appliedDiscount.discount.value}%` : `${appliedDiscount.discount.value} ${currency}`} off - Saved ${discountAmount.toFixed(2)} ${currency})`;
+      }
+
       const { data: order, error: orderError } = await supabase
         .from('orders')
-        .insert([
-          {
-            customer_id: customer.id,
-            status: 'pending',
-            total: grandTotal,
-            currency,
-            payment_method: 'whatsapp',
-            shipping: formData.address,
-          },
-        ])
+        .insert([orderData])
         .select()
         .single();
 
@@ -139,6 +198,9 @@ export default function CheckoutPage() {
       });
 
       message += `\n*Subtotal:* ${total.toFixed(2)} ${currency}\n`;
+      if (appliedDiscount) {
+        message += `*Discount (${appliedDiscount.code}):* -${discountAmount.toFixed(2)} ${currency}\n`;
+      }
       message += `*Shipping:* ${shippingCost === 0 ? 'Free' : shippingCost.toFixed(2) + ' ' + currency}\n`;
       message += `*Total:* ${grandTotal.toFixed(2)} ${currency}`;
 
@@ -300,6 +362,65 @@ export default function CheckoutPage() {
                     <span>Subtotal</span>
                     <span>{total.toFixed(2)} {currency}</span>
                   </div>
+
+                  {/* Discount Code Section */}
+                  <div className="py-2">
+                    {appliedDiscount ? (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <Tag size={16} className="text-green-600" />
+                            <span className="text-sm font-medium text-green-900">
+                              {appliedDiscount.code}
+                            </span>
+                          </div>
+                          <button
+                            onClick={handleRemoveDiscount}
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                        <div className="text-xs text-green-700">
+                          {appliedDiscount.discount.discount_type === 'percentage'
+                            ? `${appliedDiscount.discount.value}% off`
+                            : `${appliedDiscount.discount.value} ${currency} off`}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-2">
+                          Discount Code
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={discountCode}
+                            onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                            onKeyPress={(e) => e.key === 'Enter' && handleApplyDiscount()}
+                            placeholder="Enter code"
+                            className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleApplyDiscount}
+                            isLoading={applyingDiscount}
+                            disabled={!discountCode.trim()}
+                          >
+                            Apply
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {appliedDiscount && (
+                    <div className="flex justify-between text-green-600 font-medium">
+                      <span>Discount</span>
+                      <span>-{discountAmount.toFixed(2)} {currency}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between text-neutral-600">
                     <span>Shipping</span>
                     <span>{shippingCost === 0 ? 'Free' : `${shippingCost.toFixed(2)} ${currency}`}</span>

@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/types';
-import { Plus, Edit, Trash2, Package } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -12,6 +13,11 @@ import Link from 'next/link';
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; product: Product | null }>({
+    isOpen: false,
+    product: null,
+  });
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -34,20 +40,31 @@ export default function AdminProductsPage() {
     setLoading(false);
   }
 
-  async function deleteProduct(id: string) {
-    if (!confirm('Are you sure you want to delete this product?')) return;
+  const openDeleteModal = (product: Product) => {
+    setDeleteModal({ isOpen: true, product });
+  };
 
+  const closeDeleteModal = () => {
+    setDeleteModal({ isOpen: false, product: null });
+  };
+
+  async function deleteProduct() {
+    if (!deleteModal.product) return;
+
+    setDeleting(true);
     const { error } = await supabase
       .from('products')
       .delete()
-      .eq('id', id);
+      .eq('id', deleteModal.product.id);
 
     if (error) {
       toast.error('Failed to delete product');
     } else {
       toast.success('Product deleted successfully');
       fetchProducts();
+      closeDeleteModal();
     }
+    setDeleting(false);
   }
 
   return (
@@ -138,14 +155,16 @@ export default function AdminProductsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
+                      <Link href={`/admin/products/${product.id}`}>
+                        <button
+                          className="p-2 text-neutral-600 hover:text-neutral-900 transition-colors"
+                          title="Edit"
+                        >
+                          <Edit size={18} />
+                        </button>
+                      </Link>
                       <button
-                        className="p-2 text-neutral-600 hover:text-neutral-900 transition-colors"
-                        title="Edit"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        onClick={() => deleteProduct(product.id)}
+                        onClick={() => openDeleteModal(product)}
                         className="p-2 text-neutral-600 hover:text-red-600 transition-colors"
                         title="Delete"
                       >
@@ -172,6 +191,51 @@ export default function AdminProductsPage() {
           )}
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={closeDeleteModal}
+        title="Delete Product"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <AlertTriangle size={24} className="text-red-600" />
+            </div>
+            <div>
+              <p className="text-neutral-900 font-medium">
+                Are you sure you want to delete this product?
+              </p>
+              {deleteModal.product && (
+                <p className="text-sm text-neutral-600 mt-1">
+                  &quot;{deleteModal.product.title}&quot; will be permanently removed.
+                </p>
+              )}
+              <p className="text-sm text-neutral-500 mt-2">
+                This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-3 justify-end">
+            <Button
+              variant="outline"
+              onClick={closeDeleteModal}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={deleteProduct}
+              isLoading={deleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Product
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
