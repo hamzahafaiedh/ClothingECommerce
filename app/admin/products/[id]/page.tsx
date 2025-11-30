@@ -27,6 +27,7 @@ export default function EditProductPage() {
     category_id: '',
     gender: '',
     discount_id: '',
+    stock: '0',
     active: true,
   });
   const [images, setImages] = useState<string[]>(['']);
@@ -91,6 +92,7 @@ export default function EditProductPage() {
       category_id: data.category_id || '',
       gender: data.gender || '',
       discount_id: data.discount_id || '',
+      stock: data.stock?.toString() || '0',
       active: data.active,
     });
 
@@ -147,10 +149,10 @@ export default function EditProductPage() {
       return;
     }
 
-    // Validate at least one variant with name and stock
-    const validVariants = variants.filter((v) => v.name.trim() !== '' && v.stock.trim() !== '');
-    if (validVariants.length === 0) {
-      toast.error('Please add at least one variant with a name and stock quantity');
+    // Validate at least one image
+    const validImages = images.filter((img) => img.trim() !== '');
+    if (validImages.length === 0) {
+      toast.error('Please add at least one product image');
       return;
     }
 
@@ -169,6 +171,7 @@ export default function EditProductPage() {
           category_id: formData.category_id || null,
           gender: formData.gender || null,
           discount_id: formData.discount_id || null,
+          stock: parseInt(formData.stock) || 0,
           active: formData.active,
         })
         .eq('id', productId);
@@ -359,7 +362,7 @@ export default function EditProductPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Price *
@@ -392,6 +395,24 @@ export default function EditProductPage() {
                   <option value="USD">USD</option>
                   <option value="EUR">EUR</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Stock *
+                </label>
+                <input
+                  type="number"
+                  name="stock"
+                  value={formData.stock}
+                  onChange={handleInputChange}
+                  min="0"
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                  required
+                />
+                <p className="text-xs text-neutral-500 mt-1">
+                  For products without variants
+                </p>
               </div>
             </div>
 
@@ -439,7 +460,7 @@ export default function EditProductPage() {
         {/* Images */}
         <div className="bg-white rounded-xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-neutral-900">Images <span className="text-neutral-500">(optional)</span></h2>
+            <h2 className="text-xl font-semibold text-neutral-900">Images *</h2>
             <p className="text-xs text-neutral-500 bg-neutral-50 px-3 py-1.5 rounded-md border border-neutral-200">
               ℹ️ Maximum 32MB per image
             </p>
@@ -450,9 +471,14 @@ export default function EditProductPage() {
         {/* Variants */}
         <div className="bg-white rounded-xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-neutral-900">
-              Variants (Sizes/Colors) *
-            </h2>
+            <div>
+              <h2 className="text-xl font-semibold text-neutral-900">
+                Variants (Sizes/Colors)
+              </h2>
+              <p className="text-sm text-neutral-600 mt-1">
+                Leave empty if product has no variants. Use the main stock field above instead.
+              </p>
+            </div>
             <Button type="button" variant="outline" size="sm" onClick={addVariant}>
               <Plus size={18} className="mr-2" />
               Add Variant
@@ -466,9 +492,8 @@ export default function EditProductPage() {
                   type="text"
                   value={variant.name}
                   onChange={(e) => updateVariant(index, 'name', e.target.value)}
-                  placeholder="Name (e.g., Size M, Black, Default) *"
+                  placeholder="Name (e.g., Size M, Black)"
                   className="flex-1 px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                  required
                 />
                 <input
                   type="number"
@@ -482,9 +507,8 @@ export default function EditProductPage() {
                   type="number"
                   value={variant.stock}
                   onChange={(e) => updateVariant(index, 'stock', e.target.value)}
-                  placeholder="Stock *"
+                  placeholder="Stock"
                   className="w-24 px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
-                  required
                   min="0"
                 />
                 {variants.length > 1 && (

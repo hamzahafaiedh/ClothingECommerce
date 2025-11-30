@@ -87,9 +87,15 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!product) return;
 
-    // Check stock availability for variants
+    // Check stock availability for products with variants
     if (selectedVariant && selectedVariant.stock < quantity) {
       toast.error(`Only ${selectedVariant.stock} items available in stock`);
+      return;
+    }
+
+    // Check stock availability for products without variants
+    if (!selectedVariant && product.stock < quantity) {
+      toast.error(`Only ${product.stock} items available in stock`);
       return;
     }
 
@@ -312,21 +318,21 @@ export default function ProductDetailPage() {
                 <input
                   type="number"
                   min="1"
-                  max={selectedVariant ? selectedVariant.stock : undefined}
+                  max={selectedVariant ? selectedVariant.stock : product?.stock}
                   value={quantity}
                   onChange={(e) => {
                     const value = Math.max(1, parseInt(e.target.value) || 1);
-                    const maxStock = selectedVariant ? selectedVariant.stock : 999;
+                    const maxStock = selectedVariant ? selectedVariant.stock : (product?.stock || 999);
                     setQuantity(Math.min(value, maxStock));
                   }}
                   className="w-20 h-12 text-center border-2 border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 font-semibold"
                 />
                 <button
                   onClick={() => {
-                    const maxStock = selectedVariant ? selectedVariant.stock : 999;
+                    const maxStock = selectedVariant ? selectedVariant.stock : (product?.stock || 999);
                     setQuantity(Math.min(quantity + 1, maxStock));
                   }}
-                  disabled={selectedVariant && quantity >= selectedVariant.stock}
+                  disabled={(selectedVariant && quantity >= selectedVariant.stock) || (!selectedVariant && product && quantity >= product.stock)}
                   className="w-12 h-12 border-2 border-neutral-300 rounded-lg hover:border-neutral-900 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   +
@@ -337,17 +343,27 @@ export default function ProductDetailPage() {
                   Max: {selectedVariant.stock} available
                 </p>
               )}
+              {!selectedVariant && product && product.stock > 0 && product.stock <= 10 && (
+                <p className="text-sm text-neutral-600 mt-2">
+                  Max: {product.stock} available
+                </p>
+              )}
+              {!selectedVariant && product && product.stock < 5 && product.stock > 0 && (
+                <p className="text-sm text-orange-600 mt-2">
+                  Only {product.stock} left in stock
+                </p>
+              )}
             </div>
 
             {/* Add to Cart */}
             <Button
               size="lg"
               onClick={handleAddToCart}
-              disabled={selectedVariant ? selectedVariant.stock === 0 : false}
+              disabled={selectedVariant ? selectedVariant.stock === 0 : (product ? product.stock === 0 : false)}
               className="w-full"
             >
               <ShoppingBag size={20} className="mr-2" />
-              {selectedVariant && selectedVariant.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+              {(selectedVariant && selectedVariant.stock === 0) || (!selectedVariant && product && product.stock === 0) ? 'Out of Stock' : 'Add to Cart'}
             </Button>
 
             {/* Additional Info */}

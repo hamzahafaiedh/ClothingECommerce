@@ -19,10 +19,12 @@ export function ProductCard({ product }: ProductCardProps) {
   const mainImage = product.images?.[0]?.url || '/placeholder-product.jpg';
   const pricing = calculateDiscount(product);
 
-  // Check if all variants are out of stock
+  // Check if product is out of stock
+  // For products with variants: check if all variants are out of stock
+  // For products without variants: check the product's stock field
   const isOutOfStock = product.variants && product.variants.length > 0
     ? product.variants.every(v => v.stock === 0)
-    : false;
+    : (product.stock !== undefined && product.stock === 0);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -92,7 +94,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
           {/* Out of Stock Badge */}
           {isOutOfStock && (
-            <div className="absolute top-3 left-3 bg-neutral-900 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-lg">
+            <div className="absolute top-3 left-3 bg-orange-400 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-lg">
               Out of Stock
             </div>
           )}

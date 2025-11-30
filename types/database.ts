@@ -45,6 +45,7 @@ export interface Database {
           currency: string
           category_id: string | null
           gender: string | null
+          stock: number
           active: boolean
           metadata: Json
           created_at: string
@@ -59,6 +60,7 @@ export interface Database {
           currency?: string
           category_id?: string | null
           gender?: string | null
+          stock?: number
           active?: boolean
           metadata?: Json
           created_at?: string
@@ -73,6 +75,7 @@ export interface Database {
           currency?: string
           category_id?: string | null
           gender?: string | null
+          stock?: number
           active?: boolean
           metadata?: Json
           created_at?: string
