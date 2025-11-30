@@ -1,8 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Package, ShoppingCart, LayoutDashboard, Settings, Tag, Percent } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Package, ShoppingCart, LayoutDashboard, Settings, Tag, Percent, LogOut } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import toast from 'react-hot-toast';
 
 export default function AdminLayout({
   children,
@@ -10,6 +13,73 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    checkAuth();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_OUT' || !session) {
+          router.push('/admin/login');
+        } else {
+          await checkAuth();
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        router.push('/admin/login');
+        return;
+      }
+
+      setUser(user);
+    } catch (error) {
+      console.error('Auth check error:', error);
+      router.push('/admin/login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success('Logged out successfully');
+    router.push('/admin/login');
+  };
+
+  // Don't render layout on login page
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
+
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-neutral-900 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-neutral-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render layout if not authenticated
+  if (!user) {
+    return null;
+  }
 
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -52,6 +122,17 @@ export default function AdminLayout({
               );
             })}
           </nav>
+
+          {/* Logout Button */}
+          <div className="px-4 mt-auto absolute bottom-8 left-0 right-0">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg w-full text-neutral-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+            >
+              <LogOut size={20} />
+              <span className="font-medium">Logout</span>
+            </button>
+          </div>
         </aside>
 
         {/* Main Content */}
