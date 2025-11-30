@@ -23,8 +23,6 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const addItem = useCartStore((state) => state.addItem);
 
-  const pricing = product ? calculateDiscount(product) : null;
-
   useEffect(() => {
     fetchProduct();
   }, [slug]);
@@ -59,8 +57,42 @@ export default function ProductDetailPage() {
     setLoading(false);
   }
 
+  // Calculate the current price based on selected variant
+  const currentPrice = selectedVariant?.price ?? product?.price ?? 0;
+
+  // Calculate discount on the current price
+  const pricing = product && product.discount ? (() => {
+    const basePrice = currentPrice;
+    let discountedPrice = basePrice;
+
+    if (product.discount.discount_type === 'percentage') {
+      discountedPrice = basePrice * (1 - product.discount.value / 100);
+    } else {
+      discountedPrice = basePrice - product.discount.value;
+    }
+
+    return {
+      originalPrice: basePrice,
+      discountedPrice: Math.max(0, discountedPrice),
+      hasDiscount: true,
+      discount: product.discount
+    };
+  })() : {
+    originalPrice: currentPrice,
+    discountedPrice: currentPrice,
+    hasDiscount: false,
+    discount: null
+  };
+
   const handleAddToCart = () => {
     if (!product) return;
+
+    // Check stock availability for variants
+    if (selectedVariant && selectedVariant.stock < quantity) {
+      toast.error(`Only ${selectedVariant.stock} items available in stock`);
+      return;
+    }
+
     addItem(product, selectedVariant || undefined, quantity);
     toast.custom((t) => (
       <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
@@ -139,8 +171,6 @@ export default function ProductDetailPage() {
       </div>
     );
   }
-
-  const currentPrice = selectedVariant?.price || product.price;
 
   return (
     <div className="min-h-screen bg-neutral-50 py-12">
@@ -282,17 +312,31 @@ export default function ProductDetailPage() {
                 <input
                   type="number"
                   min="1"
+                  max={selectedVariant ? selectedVariant.stock : undefined}
                   value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  onChange={(e) => {
+                    const value = Math.max(1, parseInt(e.target.value) || 1);
+                    const maxStock = selectedVariant ? selectedVariant.stock : 999;
+                    setQuantity(Math.min(value, maxStock));
+                  }}
                   className="w-20 h-12 text-center border-2 border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 font-semibold"
                 />
                 <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-12 h-12 border-2 border-neutral-300 rounded-lg hover:border-neutral-900 transition-colors font-semibold"
+                  onClick={() => {
+                    const maxStock = selectedVariant ? selectedVariant.stock : 999;
+                    setQuantity(Math.min(quantity + 1, maxStock));
+                  }}
+                  disabled={selectedVariant && quantity >= selectedVariant.stock}
+                  className="w-12 h-12 border-2 border-neutral-300 rounded-lg hover:border-neutral-900 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   +
                 </button>
               </div>
+              {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock <= 10 && (
+                <p className="text-sm text-neutral-600 mt-2">
+                  Max: {selectedVariant.stock} available
+                </p>
+              )}
             </div>
 
             {/* Add to Cart */}

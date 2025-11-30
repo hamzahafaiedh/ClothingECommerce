@@ -30,6 +30,7 @@ export default function AdminProductsPage() {
       .select(`
         *,
         images:product_images(*),
+        variants:product_variants(*),
         category:categories(*)
       `)
       .order('created_at', { ascending: false });
@@ -104,6 +105,9 @@ export default function AdminProductsPage() {
                   Price
                 </th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-neutral-900">
+                  Stock
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-neutral-900">
                   Status
                 </th>
                 <th className="px-6 py-4 text-right text-sm font-semibold text-neutral-900">
@@ -112,68 +116,104 @@ export default function AdminProductsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
-              {products.map((product) => (
-                <tr key={product.id} className="hover:bg-neutral-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="relative w-12 h-12 bg-neutral-100 rounded-lg overflow-hidden flex-shrink-0">
-                        {product.images?.[0]?.url && (
-                          <Image
-                            src={product.images[0].url}
-                            alt={product.title}
-                            fill
-                            className="object-cover"
-                          />
-                        )}
+              {products.map((product) => {
+                const totalStock = product.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
+                const isOutOfStock = product.variants && product.variants.length > 0
+                  ? product.variants.every(v => v.stock === 0)
+                  : false;
+                const hasLowStock = totalStock > 0 && totalStock <= 5;
+
+                return (
+                  <tr key={product.id} className="hover:bg-neutral-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-12 h-12 bg-neutral-100 rounded-lg overflow-hidden flex-shrink-0">
+                          {product.images?.[0]?.url && (
+                            <Image
+                              src={product.images[0].url}
+                              alt={product.title}
+                              fill
+                              className="object-cover"
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-neutral-900">{product.title}</p>
+                          <p className="text-sm text-neutral-500">{product.slug}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-neutral-900">{product.title}</p>
-                        <p className="text-sm text-neutral-500">{product.slug}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-neutral-600">
-                      {product.category?.name || 'Uncategorized'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-medium text-neutral-900">
-                      {product.price.toFixed(2)} {product.currency}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        product.active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-neutral-100 text-neutral-800'
-                      }`}
-                    >
-                      {product.active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link href={`/admin/products/${product.id}`}>
-                        <button
-                          className="p-2 text-neutral-600 hover:text-neutral-900 transition-colors"
-                          title="Edit"
-                        >
-                          <Edit size={18} />
-                        </button>
-                      </Link>
-                      <button
-                        onClick={() => openDeleteModal(product)}
-                        className="p-2 text-neutral-600 hover:text-red-600 transition-colors"
-                        title="Delete"
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-neutral-600">
+                        {product.category?.name || 'Uncategorized'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="font-medium text-neutral-900">
+                        {product.price.toFixed(2)} {product.currency}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {product.variants && product.variants.length > 0 ? (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-medium ${
+                              isOutOfStock ? 'text-red-600' : hasLowStock ? 'text-orange-600' : 'text-neutral-900'
+                            }`}>
+                              {totalStock} total
+                            </span>
+                            {isOutOfStock && (
+                              <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                                Out of Stock
+                              </span>
+                            )}
+                            {hasLowStock && !isOutOfStock && (
+                              <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+                                Low Stock
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-neutral-500">
+                            {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-neutral-400">No variants</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          product.active
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-neutral-100 text-neutral-800'
+                        }`}
                       >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {product.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link href={`/admin/products/${product.id}`}>
+                          <button
+                            className="p-2 text-neutral-600 hover:text-neutral-900 transition-colors"
+                            title="Edit"
+                          >
+                            <Edit size={18} />
+                          </button>
+                        </Link>
+                        <button
+                          onClick={() => openDeleteModal(product)}
+                          className="p-2 text-neutral-600 hover:text-red-600 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 

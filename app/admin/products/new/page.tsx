@@ -21,6 +21,7 @@ export default function NewProductPage() {
     price: '',
     currency: 'TND',
     category_id: '',
+    gender: '',
     discount_id: '',
     active: true,
   });
@@ -50,6 +51,7 @@ export default function NewProductPage() {
       .from('discounts')
       .select('id, code, description, discount_type, value, active')
       .eq('active', true)
+      .is('code', null)
       .order('created_at', { ascending: false });
 
     if (data) {
@@ -93,6 +95,13 @@ export default function NewProductPage() {
       return;
     }
 
+    // Validate at least one variant with name and stock
+    const validVariants = variants.filter((v) => v.name.trim() !== '' && v.stock.trim() !== '');
+    if (validVariants.length === 0) {
+      toast.error('Please add at least one variant with a name and stock quantity');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -107,6 +116,7 @@ export default function NewProductPage() {
             price: parseFloat(formData.price),
             currency: formData.currency,
             category_id: formData.category_id || null,
+            gender: formData.gender || null,
             discount_id: formData.discount_id || null,
             active: formData.active,
           },
@@ -204,17 +214,18 @@ export default function NewProductPage() {
                 name="slug"
                 value={formData.slug}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-neutral-50 cursor-not-allowed"
                 required
+                disabled
               />
               <p className="text-xs text-neutral-500 mt-1">
-                Auto-generated from title, but you can customize it
+                Auto-generated from title
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-2">
-                Description
+                Description <span className="text-neutral-500">(optional)</span>
               </label>
               <textarea
                 name="description"
@@ -225,25 +236,45 @@ export default function NewProductPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                Category
-              </label>
-              <select
-                name="category_id"
-                value={formData.category_id}
-                onChange={(e) =>
-                  setFormData({ ...formData, category_id: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
-              >
-                <option value="">No category</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Category <span className="text-neutral-500">(optional)</span>
+                </label>
+                <select
+                  name="category_id"
+                  value={formData.category_id}
+                  onChange={(e) =>
+                    setFormData({ ...formData, category_id: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                >
+                  <option value="">No category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Gender <span className="text-neutral-500">(optional)</span>
+                </label>
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={(e) =>
+                    setFormData({ ...formData, gender: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                >
+                  <option value="">All / Unisex</option>
+                  <option value="men">Men</option>
+                  <option value="women">Women</option>
+                </select>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -264,7 +295,7 @@ export default function NewProductPage() {
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Currency
+                  Currency *
                 </label>
                 <select
                   name="currency"
@@ -273,6 +304,7 @@ export default function NewProductPage() {
                     setFormData({ ...formData, currency: e.target.value })
                   }
                   className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                  required
                 >
                   <option value="TND">TND</option>
                   <option value="USD">USD</option>
@@ -324,7 +356,12 @@ export default function NewProductPage() {
 
         {/* Images */}
         <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-neutral-900 mb-4">Images</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-neutral-900">Images <span className="text-neutral-500">(optional)</span></h2>
+            <p className="text-xs text-neutral-500 bg-neutral-50 px-3 py-1.5 rounded-md border border-neutral-200">
+              ℹ️ Maximum 32MB per image
+            </p>
+          </div>
           <ImageUpload images={images} onChange={setImages} />
         </div>
 
@@ -332,7 +369,7 @@ export default function NewProductPage() {
         <div className="bg-white rounded-xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-neutral-900">
-              Variants (Sizes/Colors)
+              Variants (Sizes/Colors) *
             </h2>
             <Button type="button" variant="outline" size="sm" onClick={addVariant}>
               <Plus size={18} className="mr-2" />
@@ -347,8 +384,9 @@ export default function NewProductPage() {
                   type="text"
                   value={variant.name}
                   onChange={(e) => updateVariant(index, 'name', e.target.value)}
-                  placeholder="Name (e.g., Size M, Black)"
+                  placeholder="Name (e.g., Size M, Black, Default) *"
                   className="flex-1 px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                  required
                 />
                 <input
                   type="number"
@@ -362,8 +400,10 @@ export default function NewProductPage() {
                   type="number"
                   value={variant.stock}
                   onChange={(e) => updateVariant(index, 'stock', e.target.value)}
-                  placeholder="Stock"
+                  placeholder="Stock *"
                   className="w-24 px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                  required
+                  min="0"
                 />
                 {variants.length > 1 && (
                   <button
@@ -378,7 +418,7 @@ export default function NewProductPage() {
             ))}
           </div>
           <p className="text-xs text-neutral-500 mt-2">
-            Leave price empty to use the base product price
+            At least one variant with stock quantity is required. Leave price empty to use the base product price
           </p>
         </div>
 

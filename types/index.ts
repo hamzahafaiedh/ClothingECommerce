@@ -6,6 +6,7 @@ export interface Product {
   price: number;
   currency: string;
   category_id: string | null;
+  gender: string | null;
   discount_id: string | null;
   active: boolean;
   metadata: Record<string, any>;

@@ -132,6 +132,12 @@ export default function CartPage() {
                             {item.variant && (
                               <p className="text-sm text-neutral-600">{item.variant.name}</p>
                             )}
+                            {item.variant && item.variant.stock === 0 && (
+                              <p className="text-sm text-red-600 font-medium">Out of Stock</p>
+                            )}
+                            {item.variant && item.variant.stock > 0 && item.variant.stock < item.quantity && (
+                              <p className="text-sm text-orange-600">Only {item.variant.stock} available</p>
+                            )}
                           </div>
                           <button
                             onClick={() => removeItem(item.product.id, item.variant?.id)}
@@ -158,14 +164,20 @@ export default function CartPage() {
                             </button>
                             <span className="w-12 text-center font-medium">{item.quantity}</span>
                             <button
-                              onClick={() =>
+                              onClick={() => {
+                                const maxStock = item.variant?.stock ?? 999;
+                                if (item.quantity >= maxStock) {
+                                  toast.error(`Only ${maxStock} items available in stock`);
+                                  return;
+                                }
                                 updateQuantity(
                                   item.product.id,
                                   item.quantity + 1,
                                   item.variant?.id
-                                )
-                              }
-                              className="w-8 h-8 flex items-center justify-center border border-neutral-300 rounded hover:border-neutral-900 transition-colors"
+                                );
+                              }}
+                              disabled={item.variant && item.quantity >= item.variant.stock}
+                              className="w-8 h-8 flex items-center justify-center border border-neutral-300 rounded hover:border-neutral-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <Plus size={14} />
                             </button>
@@ -236,16 +248,15 @@ export default function CartPage() {
                           onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
                           onKeyPress={(e) => e.key === 'Enter' && handleApplyDiscount()}
                           placeholder="Enter code"
-                          className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                          className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 min-w-0"
                         />
-                        <Button
-                          size="sm"
+                        <button
                           onClick={handleApplyDiscount}
-                          isLoading={applyingDiscount}
-                          disabled={!discountCode.trim()}
+                          disabled={!discountCode.trim() || applyingDiscount}
+                          className="px-3 py-2 text-sm font-medium text-white bg-neutral-900 rounded-lg hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap flex-shrink-0"
                         >
-                          Apply
-                        </Button>
+                          {applyingDiscount ? '...' : 'Apply'}
+                        </button>
                       </div>
                     </div>
                   )}

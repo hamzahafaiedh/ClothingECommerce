@@ -15,6 +15,26 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchStats();
+
+    // Refetch stats when the page becomes visible (e.g., when navigating back)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchStats();
+      }
+    };
+
+    // Refetch stats when the window regains focus
+    const handleFocus = () => {
+      fetchStats();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   async function fetchStats() {
@@ -35,11 +55,12 @@ export default function AdminDashboard() {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
 
-      // Fetch revenue
+      // Fetch revenue - ONLY from paid orders
+      // Pending, shipped, delivered, and cancelled orders are NOT included in revenue
       const { data: orders } = await supabase
         .from('orders')
         .select('total')
-        .in('status', ['paid', 'shipped', 'delivered']);
+        .eq('status', 'paid');
 
       const totalRevenue = orders?.reduce((sum, order) => sum + order.total, 0) || 0;
 

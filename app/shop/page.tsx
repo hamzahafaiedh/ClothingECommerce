@@ -17,12 +17,15 @@ function ShopContent() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     searchParams.get('category')
   );
+  const [selectedGender, setSelectedGender] = useState<string | null>(
+    searchParams.get('gender')
+  );
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
 
   useEffect(() => {
     fetchCategories();
     fetchProducts();
-  }, [selectedCategory, sortBy]);
+  }, [selectedCategory, selectedGender, sortBy]);
 
   async function fetchCategories() {
     const { data } = await supabase
@@ -48,6 +51,11 @@ function ShopContent() {
 
     if (selectedCategory) {
       query = query.eq('category_id', selectedCategory);
+    }
+
+    if (selectedGender) {
+      // Include both the selected gender AND unisex products (null gender)
+      query = query.or(`gender.eq.${selectedGender},gender.is.null`);
     }
 
     switch (sortBy) {
@@ -116,32 +124,70 @@ function ShopContent() {
         <div className="flex gap-8">
           {/* Sidebar Filters - Desktop */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
-            <div className="sticky top-24 bg-white rounded-xl p-6 shadow-sm">
-              <h3 className="font-semibold text-lg mb-4">Categories</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={() => setSelectedCategory(null)}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    !selectedCategory
-                      ? 'bg-neutral-900 text-white'
-                      : 'hover:bg-neutral-100'
-                  }`}
-                >
-                  All Products
-                </button>
-                {categories.map((category) => (
+            <div className="sticky top-24 space-y-6">
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <h3 className="font-semibold text-lg mb-4">Gender</h3>
+                <div className="space-y-2">
                   <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
+                    onClick={() => setSelectedGender(null)}
                     className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                      selectedCategory === category.id
+                      !selectedGender
                         ? 'bg-neutral-900 text-white'
                         : 'hover:bg-neutral-100'
                     }`}
                   >
-                    {category.name}
+                    All
                   </button>
-                ))}
+                  <button
+                    onClick={() => setSelectedGender('men')}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                      selectedGender === 'men'
+                        ? 'bg-neutral-900 text-white'
+                        : 'hover:bg-neutral-100'
+                    }`}
+                  >
+                    Men
+                  </button>
+                  <button
+                    onClick={() => setSelectedGender('women')}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                      selectedGender === 'women'
+                        ? 'bg-neutral-900 text-white'
+                        : 'hover:bg-neutral-100'
+                    }`}
+                  >
+                    Women
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <h3 className="font-semibold text-lg mb-4">Categories</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                      !selectedCategory
+                        ? 'bg-neutral-900 text-white'
+                        : 'hover:bg-neutral-100'
+                    }`}
+                  >
+                    All Products
+                  </button>
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                        selectedCategory === category.id
+                          ? 'bg-neutral-900 text-white'
+                          : 'hover:bg-neutral-100'
+                      }`}
+                    >
+                      {category.name}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </aside>
@@ -170,36 +216,86 @@ function ShopContent() {
                     </button>
                   </div>
 
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => {
-                        setSelectedCategory(null);
-                        setFilterOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                        !selectedCategory
-                          ? 'bg-neutral-900 text-white'
-                          : 'hover:bg-neutral-100'
-                      }`}
-                    >
-                      All Products
-                    </button>
-                    {categories.map((category) => (
-                      <button
-                        key={category.id}
-                        onClick={() => {
-                          setSelectedCategory(category.id);
-                          setFilterOpen(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                          selectedCategory === category.id
-                            ? 'bg-neutral-900 text-white'
-                            : 'hover:bg-neutral-100'
-                        }`}
-                      >
-                        {category.name}
-                      </button>
-                    ))}
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="font-semibold mb-3">Gender</h4>
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => {
+                            setSelectedGender(null);
+                            setFilterOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                            !selectedGender
+                              ? 'bg-neutral-900 text-white'
+                              : 'hover:bg-neutral-100'
+                          }`}
+                        >
+                          All
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedGender('men');
+                            setFilterOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                            selectedGender === 'men'
+                              ? 'bg-neutral-900 text-white'
+                              : 'hover:bg-neutral-100'
+                          }`}
+                        >
+                          Men
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedGender('women');
+                            setFilterOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                            selectedGender === 'women'
+                              ? 'bg-neutral-900 text-white'
+                              : 'hover:bg-neutral-100'
+                          }`}
+                        >
+                          Women
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold mb-3">Categories</h4>
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => {
+                            setSelectedCategory(null);
+                            setFilterOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                            !selectedCategory
+                              ? 'bg-neutral-900 text-white'
+                              : 'hover:bg-neutral-100'
+                          }`}
+                        >
+                          All Products
+                        </button>
+                        {categories.map((category) => (
+                          <button
+                            key={category.id}
+                            onClick={() => {
+                              setSelectedCategory(category.id);
+                              setFilterOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                              selectedCategory === category.id
+                                ? 'bg-neutral-900 text-white'
+                                : 'hover:bg-neutral-100'
+                            }`}
+                          >
+                            {category.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               </motion.div>

@@ -279,17 +279,18 @@ export default function AdminCategoriesPage() {
               name="slug"
               value={formData.slug}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+              className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-neutral-50 cursor-not-allowed"
               required
+              disabled
             />
             <p className="text-xs text-neutral-500 mt-1">
-              Auto-generated from name, but you can customize it
+              Auto-generated from name
             </p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Description
+              Description <span className="text-neutral-500">(optional)</span>
             </label>
             <textarea
               name="description"

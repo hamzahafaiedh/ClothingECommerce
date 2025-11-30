@@ -19,9 +19,22 @@ export function ProductCard({ product }: ProductCardProps) {
   const mainImage = product.images?.[0]?.url || '/placeholder-product.jpg';
   const pricing = calculateDiscount(product);
 
+  // Check if all variants are out of stock
+  const isOutOfStock = product.variants && product.variants.length > 0
+    ? product.variants.every(v => v.stock === 0)
+    : false;
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
-    addItem(product, product.variants?.[0]);
+
+    if (isOutOfStock) {
+      toast.error('This product is out of stock');
+      return;
+    }
+
+    // Find first variant with stock
+    const availableVariant = product.variants?.find(v => v.stock > 0);
+    addItem(product, availableVariant || product.variants?.[0]);
     toast.custom((t) => (
       <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
         <div className="flex-1 w-0 p-4">
@@ -77,8 +90,15 @@ export function ProductCard({ product }: ProductCardProps) {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
 
+          {/* Out of Stock Badge */}
+          {isOutOfStock && (
+            <div className="absolute top-3 left-3 bg-neutral-900 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-lg">
+              Out of Stock
+            </div>
+          )}
+
           {/* Discount Badge */}
-          {pricing.hasDiscount && pricing.discount && (
+          {pricing.hasDiscount && pricing.discount && !isOutOfStock && (
             <div className="absolute top-3 right-3 bg-red-600 text-white px-3 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1 shadow-lg">
               <Tag size={14} />
               {pricing.discount.discount_type === 'percentage'
@@ -88,15 +108,17 @@ export function ProductCard({ product }: ProductCardProps) {
           )}
 
           {/* Quick Add Button */}
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            whileHover={{ scale: 1.05 }}
-            onClick={handleAddToCart}
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white text-neutral-900 px-6 py-2.5 rounded-full font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-2 shadow-lg"
-          >
-            <ShoppingBag size={18} />
-            Quick Add
-          </motion.button>
+          {!isOutOfStock && (
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              whileHover={{ scale: 1.05 }}
+              onClick={handleAddToCart}
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white text-neutral-900 px-6 py-2.5 rounded-full font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-2 shadow-lg"
+            >
+              <ShoppingBag size={18} />
+              Quick Add
+            </motion.button>
+          )}
         </div>
 
         <div className="p-4">

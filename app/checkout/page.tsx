@@ -160,6 +160,25 @@ export default function CheckoutPage() {
 
       if (itemsError) throw itemsError;
 
+      // Update variant stock levels
+      for (const item of items) {
+        if (item.variant?.id) {
+          const { data: currentVariant } = await supabase
+            .from('product_variants')
+            .select('stock')
+            .eq('id', item.variant.id)
+            .single();
+
+          if (currentVariant) {
+            const newStock = Math.max(0, currentVariant.stock - item.quantity);
+            await supabase
+              .from('product_variants')
+              .update({ stock: newStock })
+              .eq('id', item.variant.id);
+          }
+        }
+      }
+
       return order.id;
     } catch (error) {
       console.error('Order creation error:', error);
@@ -282,7 +301,7 @@ export default function CheckoutPage() {
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Email (optional)
+                  Email <span className="text-neutral-500">(optional)</span>
                 </label>
                 <input
                   type="email"
@@ -299,7 +318,7 @@ export default function CheckoutPage() {
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Street Address
+                  Street Address <span className="text-neutral-500">(optional)</span>
                 </label>
                 <input
                   type="text"
@@ -313,7 +332,7 @@ export default function CheckoutPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    City
+                    City <span className="text-neutral-500">(optional)</span>
                   </label>
                   <input
                     type="text"
@@ -326,7 +345,7 @@ export default function CheckoutPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Postal Code
+                    Postal Code <span className="text-neutral-500">(optional)</span>
                   </label>
                   <input
                     type="text"
@@ -390,7 +409,7 @@ export default function CheckoutPage() {
                     ) : (
                       <div>
                         <label className="block text-sm font-medium text-neutral-700 mb-2">
-                          Discount Code
+                          Discount Code <span className="text-neutral-500">(optional)</span>
                         </label>
                         <div className="flex gap-2">
                           <input
@@ -399,16 +418,15 @@ export default function CheckoutPage() {
                             onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
                             onKeyPress={(e) => e.key === 'Enter' && handleApplyDiscount()}
                             placeholder="Enter code"
-                            className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                            className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 min-w-0"
                           />
-                          <Button
-                            size="sm"
+                          <button
                             onClick={handleApplyDiscount}
-                            isLoading={applyingDiscount}
-                            disabled={!discountCode.trim()}
+                            disabled={!discountCode.trim() || applyingDiscount}
+                            className="px-3 py-2 text-sm font-medium text-white bg-neutral-900 rounded-lg hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap flex-shrink-0"
                           >
-                            Apply
-                          </Button>
+                            {applyingDiscount ? '...' : 'Apply'}
+                          </button>
                         </div>
                       </div>
                     )}

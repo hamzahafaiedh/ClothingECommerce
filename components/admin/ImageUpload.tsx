@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, X, Loader2 } from 'lucide-react';
+import { Upload, X, Loader2, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
@@ -13,6 +13,7 @@ interface ImageUploadProps {
 
 export function ImageUpload({ images, onChange }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const uploadToImgBB = async (file: File): Promise<string> => {
     const formData = new FormData();
@@ -55,9 +56,9 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
           continue;
         }
 
-        // Validate file size (max 5MB for free tier)
-        if (file.size > 5 * 1024 * 1024) {
-          toast.error(`${file.name} is too large (max 5MB)`);
+        // Validate file size (max 32MB)
+        if (file.size > 32 * 1024 * 1024) {
+          toast.error(`${file.name} is too large (max 32MB)`);
           continue;
         }
 
@@ -94,6 +95,31 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
     onChange([...images, '']);
   };
 
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newImages = [...images];
+    const draggedImage = newImages[draggedIndex];
+
+    // Remove from old position
+    newImages.splice(draggedIndex, 1);
+    // Insert at new position
+    newImages.splice(index, 0, draggedImage);
+
+    onChange(newImages);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
   return (
     <div className="space-y-4">
       {/* Upload Button */}
@@ -121,7 +147,7 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
                   Click to upload images
                 </p>
                 <p className="text-sm text-neutral-500">
-                  PNG, JPG, GIF up to 5MB each
+                  PNG, JPG, GIF up to 32MB each
                 </p>
               </div>
             )}
@@ -132,7 +158,21 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
       {/* Image Previews & URL Inputs */}
       <div className="space-y-3">
         {images.map((image, index) => (
-          <div key={index} className="flex gap-2 items-start">
+          <div
+            key={index}
+            draggable
+            onDragStart={() => handleDragStart(index)}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDragEnd={handleDragEnd}
+            className={`flex gap-2 items-start group transition-all ${
+              draggedIndex === index ? 'opacity-50' : 'opacity-100'
+            }`}
+          >
+            {/* Drag Handle */}
+            <div className="flex items-center justify-center w-8 h-20 cursor-move text-neutral-400 hover:text-neutral-600 transition-colors">
+              <GripVertical size={20} />
+            </div>
+
             {/* Preview */}
             {image && (
               <div className="relative w-20 h-20 flex-shrink-0 bg-neutral-100 rounded-lg overflow-hidden">
@@ -142,6 +182,10 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
                   fill
                   className="object-cover"
                 />
+                {/* Order Badge */}
+                <div className="absolute top-1 left-1 bg-neutral-900 text-white text-xs font-semibold px-2 py-0.5 rounded">
+                  {index + 1}
+                </div>
               </div>
             )}
 
@@ -167,6 +211,12 @@ export function ImageUpload({ images, onChange }: ImageUploadProps) {
           </div>
         ))}
       </div>
+
+      {images.length > 0 && (
+        <p className="text-xs text-neutral-500 italic">
+          Drag and drop images to reorder them. The first image will be the main product image.
+        </p>
+      )}
 
       {/* Add URL Button */}
       <button
