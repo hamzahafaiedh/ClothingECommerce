@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { CartItem, Product, ProductVariant, AppliedDiscount } from '@/types';
 
 interface CartStore {
@@ -89,8 +89,19 @@ const cartStore = (set: any, get: any) => ({
   },
 });
 
-export const useCartStore = create<CartStore>()(
-  typeof window !== 'undefined'
-    ? persist(cartStore, { name: 'cart-storage' })
-    : cartStore
-);
+const createCartStore = () => {
+  if (typeof window === 'undefined') {
+    // Server-side: create a basic store without persistence
+    return create<CartStore>()(cartStore);
+  }
+
+  // Client-side: create a store with persistence
+  return create<CartStore>()(
+    persist(cartStore, {
+      name: 'cart-storage',
+      storage: createJSONStorage(() => localStorage),
+    })
+  );
+};
+
+export const useCartStore = createCartStore();
