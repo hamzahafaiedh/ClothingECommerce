@@ -5,6 +5,7 @@ export interface Product {
   description: string | null;
   price: number;
   currency: string;
+  stock: number;
   category_id: string | null;
   gender: string | null;
   discount_id: string | null;
