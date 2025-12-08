@@ -6,7 +6,7 @@ import { useCartStore } from '@/store/cart';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Customer, Discount } from '@/types';
-import { MessageCircle, CreditCard, Tag, X } from 'lucide-react';
+import { MessageCircle, Tag, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { calculateDiscountCodeAmount } from '@/lib/pricing';
 
@@ -238,22 +238,6 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleStandardCheckout = async () => {
-    if (!formData.full_name || !formData.phone || !formData.email) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    try {
-      await createOrder();
-      clearCart();
-      toast.success('Order placed successfully!');
-      router.push('/');
-    } catch (error) {
-      toast.error('Failed to create order. Please try again.');
-    }
-  };
-
   if (items.length === 0) {
     router.push('/cart');
     return null;
@@ -459,17 +443,6 @@ export default function CheckoutPage() {
                 >
                   <MessageCircle size={20} className="mr-2" />
                   Order via WhatsApp
-                </Button>
-
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={handleStandardCheckout}
-                  isLoading={loading}
-                  className="w-full"
-                >
-                  <CreditCard size={20} className="mr-2" />
-                  Place Order
                 </Button>
               </div>
 
