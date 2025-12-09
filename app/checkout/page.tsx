@@ -6,9 +6,10 @@ import { useCartStore } from '@/store/cart';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Customer, Discount } from '@/types';
-import { MessageCircle, Tag, X } from 'lucide-react';
+import { MessageCircle, Tag, X, Shield, Truck, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { calculateDiscountCodeAmount } from '@/lib/pricing';
+import { motion } from 'framer-motion';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -105,7 +106,6 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
 
-      // Create customer
       const { data: customer, error: customerError } = await supabase
         .from('customers')
         .insert([
@@ -121,7 +121,6 @@ export default function CheckoutPage() {
 
       if (customerError) throw customerError;
 
-      // Create order
       const orderData: any = {
         customer_id: customer.id,
         status: 'pending',
@@ -143,7 +142,6 @@ export default function CheckoutPage() {
 
       if (orderError) throw orderError;
 
-      // Create order items
       const orderItems = items.map((item) => ({
         order_id: order.id,
         product_id: item.product.id,
@@ -160,7 +158,6 @@ export default function CheckoutPage() {
 
       if (itemsError) throw itemsError;
 
-      // Update variant stock levels
       for (const item of items) {
         if (item.variant?.id) {
           const { data: currentVariant } = await supabase
@@ -197,7 +194,6 @@ export default function CheckoutPage() {
     try {
       const orderId = await createOrder();
 
-      // Generate WhatsApp message
       let message = `*New Order #${orderId.substring(0, 8)}*\n\n`;
       message += `*Customer Details:*\n`;
       message += `Name: ${formData.full_name}\n`;
@@ -244,18 +240,48 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-display font-bold text-neutral-900 mb-8">Checkout</h1>
+    <div className="min-h-screen bg-neutral-950 py-6 sm:py-8 lg:py-12">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-white mb-2">Checkout</h1>
+          <div className="w-12 sm:w-16 h-1 bg-amber-500 mb-6 sm:mb-8" />
+        </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Trust Badges */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 p-3 sm:p-4 bg-neutral-900/50 rounded-lg border border-neutral-800 text-center sm:text-left">
+            <Shield size={18} className="text-amber-500 flex-shrink-0 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm text-neutral-300">Secure Checkout</span>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 p-3 sm:p-4 bg-neutral-900/50 rounded-lg border border-neutral-800 text-center sm:text-left">
+            <Truck size={18} className="text-amber-500 flex-shrink-0 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm text-neutral-300">Fast Delivery</span>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 p-3 sm:p-4 bg-neutral-900/50 rounded-lg border border-neutral-800 text-center sm:text-left">
+            <Clock size={18} className="text-amber-500 flex-shrink-0 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm text-neutral-300">Easy Returns</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Checkout Form */}
-          <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm">
-            <h2 className="text-xl font-semibold text-neutral-900 mb-6">Contact Information</h2>
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="lg:col-span-2 bg-neutral-900/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-neutral-800"
+          >
+            <h2 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6 flex items-center gap-2">
+              <span className="w-1 h-4 sm:h-5 bg-amber-500 rounded-full" />
+              Contact Information
+            </h2>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-neutral-300 mb-1.5 sm:mb-2">
                   Full Name *
                 </label>
                 <input
@@ -263,13 +289,13 @@ export default function CheckoutPage() {
                   name="full_name"
                   value={formData.full_name}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-neutral-800 border border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-white placeholder-neutral-500 text-sm sm:text-base"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-neutral-300 mb-1.5 sm:mb-2">
                   Phone Number *
                 </label>
                 <input
@@ -278,13 +304,13 @@ export default function CheckoutPage() {
                   value={formData.phone}
                   onChange={handleInputChange}
                   placeholder="+216 12 345 678"
-                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-neutral-800 border border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-white placeholder-neutral-500 text-sm sm:text-base"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-neutral-300 mb-1.5 sm:mb-2">
                   Email <span className="text-neutral-500">(optional)</span>
                 </label>
                 <input
@@ -292,16 +318,19 @@ export default function CheckoutPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-neutral-800 border border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-white placeholder-neutral-500 text-sm sm:text-base"
                 />
               </div>
 
-              <h2 className="text-xl font-semibold text-neutral-900 mb-4 pt-4">
-                Shipping Address
-              </h2>
+              <div className="pt-4 sm:pt-6 border-t border-neutral-800">
+                <h2 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6 flex items-center gap-2">
+                  <span className="w-1 h-4 sm:h-5 bg-amber-500 rounded-full" />
+                  Shipping Address
+                </h2>
+              </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-neutral-300 mb-1.5 sm:mb-2">
                   Street Address <span className="text-neutral-500">(optional)</span>
                 </label>
                 <input
@@ -309,13 +338,13 @@ export default function CheckoutPage() {
                   name="address.street"
                   value={formData.address?.street}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-neutral-800 border border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-white placeholder-neutral-500 text-sm sm:text-base"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-neutral-300 mb-1.5 sm:mb-2">
                     City <span className="text-neutral-500">(optional)</span>
                   </label>
                   <input
@@ -323,12 +352,12 @@ export default function CheckoutPage() {
                     name="address.city"
                     value={formData.address?.city}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-neutral-800 border border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-white placeholder-neutral-500 text-sm sm:text-base"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-neutral-300 mb-1.5 sm:mb-2">
                     Postal Code <span className="text-neutral-500">(optional)</span>
                   </label>
                   <input
@@ -336,55 +365,60 @@ export default function CheckoutPage() {
                     name="address.postal"
                     value={formData.address?.postal}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-neutral-800 border border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-white placeholder-neutral-500 text-sm sm:text-base"
                   />
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl p-6 shadow-sm sticky top-24">
-              <h2 className="text-xl font-semibold text-neutral-900 mb-4">Order Summary</h2>
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="lg:col-span-1"
+          >
+            <div className="bg-neutral-900/50 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-neutral-800 sticky top-20 lg:top-24">
+              <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Order Summary</h2>
 
-              <div className="space-y-3 mb-6">
+              <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
                 {items.map((item) => (
-                  <div key={`${item.product.id}-${item.variant?.id}`} className="flex justify-between text-sm">
-                    <span className="text-neutral-700">
+                  <div key={`${item.product.id}-${item.variant?.id}`} className="flex justify-between text-xs sm:text-sm gap-2">
+                    <span className="text-neutral-400 truncate flex-1">
                       {item.product.title} {item.variant && `(${item.variant.name})`} x{item.quantity}
                     </span>
-                    <span className="text-neutral-900 font-medium">
+                    <span className="text-white font-medium flex-shrink-0">
                       {((item.variant?.price || item.product.price) * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 ))}
 
-                <div className="border-t border-neutral-200 pt-3 space-y-2">
-                  <div className="flex justify-between text-neutral-600">
+                <div className="border-t border-neutral-800 pt-2 sm:pt-3 space-y-2">
+                  <div className="flex justify-between text-neutral-400 text-xs sm:text-sm">
                     <span>Subtotal</span>
-                    <span>{total.toFixed(2)} {currency}</span>
+                    <span className="text-white">{total.toFixed(2)} {currency}</span>
                   </div>
 
                   {/* Discount Code Section */}
                   <div className="py-2">
                     {appliedDiscount ? (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 sm:p-3">
                         <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <Tag size={16} className="text-green-600" />
-                            <span className="text-sm font-medium text-green-900">
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <Tag size={14} className="text-amber-400 sm:w-4 sm:h-4" />
+                            <span className="text-xs sm:text-sm font-medium text-amber-400">
                               {appliedDiscount.code}
                             </span>
                           </div>
                           <button
                             onClick={handleRemoveDiscount}
-                            className="text-green-600 hover:text-green-800"
+                            className="text-amber-400 hover:text-amber-300"
                           >
-                            <X size={16} />
+                            <X size={14} className="sm:w-4 sm:h-4" />
                           </button>
                         </div>
-                        <div className="text-xs text-green-700">
+                        <div className="text-xs text-amber-400/70">
                           {appliedDiscount.discount.discount_type === 'percentage'
                             ? `${appliedDiscount.discount.value}% off`
                             : `${appliedDiscount.discount.value} ${currency} off`}
@@ -392,8 +426,8 @@ export default function CheckoutPage() {
                       </div>
                     ) : (
                       <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-2">
-                          Discount Code <span className="text-neutral-500">(optional)</span>
+                        <label className="block text-xs sm:text-sm font-medium text-neutral-400 mb-1.5 sm:mb-2">
+                          Discount Code <span className="text-neutral-600">(optional)</span>
                         </label>
                         <div className="flex gap-2">
                           <input
@@ -402,12 +436,12 @@ export default function CheckoutPage() {
                             onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
                             onKeyPress={(e) => e.key === 'Enter' && handleApplyDiscount()}
                             placeholder="Enter code"
-                            className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 min-w-0"
+                            className="flex-1 px-2 sm:px-3 py-2 text-xs sm:text-sm bg-neutral-800 border border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-white placeholder-neutral-500 min-w-0"
                           />
                           <button
                             onClick={handleApplyDiscount}
                             disabled={!discountCode.trim() || applyingDiscount}
-                            className="px-3 py-2 text-sm font-medium text-white bg-neutral-900 rounded-lg hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap flex-shrink-0"
+                            className="px-2.5 sm:px-3 py-2 text-xs sm:text-sm font-medium text-black bg-amber-500 rounded-lg hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap flex-shrink-0"
                           >
                             {applyingDiscount ? '...' : 'Apply'}
                           </button>
@@ -417,40 +451,40 @@ export default function CheckoutPage() {
                   </div>
 
                   {appliedDiscount && (
-                    <div className="flex justify-between text-green-600 font-medium">
+                    <div className="flex justify-between text-amber-400 font-medium text-xs sm:text-sm">
                       <span>Discount</span>
                       <span>-{discountAmount.toFixed(2)} {currency}</span>
                     </div>
                   )}
 
-                  <div className="flex justify-between text-neutral-600">
+                  <div className="flex justify-between text-neutral-400 text-xs sm:text-sm">
                     <span>Shipping</span>
-                    <span>{shippingCost === 0 ? 'Free' : `${shippingCost.toFixed(2)} ${currency}`}</span>
+                    <span className="text-white">{shippingCost === 0 ? 'Free' : `${shippingCost.toFixed(2)} ${currency}`}</span>
                   </div>
-                  <div className="flex justify-between text-lg font-semibold text-neutral-900 pt-2">
-                    <span>Total</span>
-                    <span>{grandTotal.toFixed(2)} {currency}</span>
+                  <div className="flex justify-between text-base sm:text-lg font-bold pt-2 border-t border-neutral-800">
+                    <span className="text-white">Total</span>
+                    <span className="text-amber-400">{grandTotal.toFixed(2)} {currency}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <Button
                   size="lg"
                   onClick={handleWhatsAppCheckout}
                   isLoading={loading}
-                  className="w-full bg-green-600 hover:bg-green-700"
+                  className="w-full bg-green-600 hover:bg-green-500 text-white font-bold text-sm sm:text-base"
                 >
-                  <MessageCircle size={20} className="mr-2" />
+                  <MessageCircle size={18} className="mr-2 sm:w-5 sm:h-5" />
                   Order via WhatsApp
                 </Button>
               </div>
 
-              <p className="text-xs text-neutral-500 text-center mt-4">
+              <p className="text-[10px] sm:text-xs text-neutral-500 text-center mt-3 sm:mt-4">
                 By placing your order, you agree to our terms and conditions
               </p>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>
