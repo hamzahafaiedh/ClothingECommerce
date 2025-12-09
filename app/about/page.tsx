@@ -37,8 +37,8 @@ export default function AboutPage() {
       {/* Hero Section */}
       <section className="relative py-16 sm:py-20 lg:py-24 overflow-hidden">
         {/* Background Image */}
-        <div className="absolute inset-0 bg-[url('/about-hero.jpg')] bg-cover bg-center opacity-50" />
-        <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/60 via-neutral-950/40 to-neutral-950" />
+        <div className="absolute inset-0 bg-[url('/about-hero.jpg')] bg-cover bg-center opacity-70" />
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-transparent to-transparent" />
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -59,7 +59,7 @@ export default function AboutPage() {
       </section>
 
       {/* Story Section */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-neutral-900/50">
+      <section className="py-16 sm:py-20 lg:py-24 bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
             <motion.div
@@ -124,7 +124,7 @@ export default function AboutPage() {
       </section>
 
       {/* Values Section */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-neutral-950">
+      <section className="py-16 sm:py-20 lg:py-24 bg-neutral-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -168,7 +168,7 @@ export default function AboutPage() {
       </section>
 
       {/* Team Section */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-neutral-900/50">
+      <section className="py-16 sm:py-20 lg:py-24 bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -218,7 +218,7 @@ export default function AboutPage() {
       </section>
 
       {/* Mission Section */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-br from-amber-900/20 via-neutral-950 to-neutral-950 relative overflow-hidden">
+      <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-br from-amber-900/20 via-neutral-900/50 to-neutral-900/50 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 sm:w-96 h-64 sm:h-96 bg-amber-500/10 rounded-full blur-3xl" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <motion.div
@@ -241,7 +241,7 @@ export default function AboutPage() {
       </section>
 
       {/* Location Section */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-neutral-900/50">
+      <section className="py-16 sm:py-20 lg:py-24 bg-neutral-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
