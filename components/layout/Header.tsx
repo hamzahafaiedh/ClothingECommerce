@@ -92,7 +92,7 @@ export function Header() {
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-2 -right-2 bg-amber-500 text-black text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold"
+                  className="absolute top-[-3px] right-[-3px] bg-amber-500 text-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold"
                 >
                   {itemCount}
                 </motion.span>

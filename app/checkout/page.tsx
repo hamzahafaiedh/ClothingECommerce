@@ -6,7 +6,7 @@ import { useCartStore } from '@/store/cart';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Customer, Discount } from '@/types';
-import { MessageCircle, Mail, Tag, X, Shield, Truck, Clock } from 'lucide-react';
+import { MessageCircle, Tag, X, Shield, Truck, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { calculateDiscountCodeAmount } from '@/lib/pricing';
 import { motion } from 'framer-motion';
@@ -546,7 +546,6 @@ export default function CheckoutPage() {
                   isLoading={loading}
                   className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm sm:text-base"
                 >
-                  <Mail size={18} className="mr-2 sm:w-5 sm:h-5" />
                   Place Order
                 </Button>
                 <div className="relative flex items-center justify-center py-1">
