@@ -68,21 +68,21 @@ export function Footer() {
           {/* Contact */}
           <div className="col-span-2 sm:col-span-1">
             <h4 className="font-semibold mb-3 sm:mb-4 text-white text-sm sm:text-base">Get in Touch</h4>
-            <ul className="space-y-2 sm:space-y-3 text-sm text-neutral-400">
-              <li className="flex items-center gap-2 sm:gap-3">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-neutral-800 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Phone size={12} className="text-amber-400 sm:w-[14px] sm:h-[14px]" />
-                </div>
-                <a href={`tel:${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}`} className="hover:text-amber-400 transition-colors">
-                  Contact Us
+            <ul className="space-y-4 text-sm text-neutral-400">
+              <li>
+                <a href={`tel:${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}`} className="flex items-center gap-3 hover:text-amber-400 transition-colors">
+                  <span className="w-8 h-8 bg-neutral-800 rounded-full inline-flex items-center justify-center flex-shrink-0">
+                    <Phone size={14} className="text-amber-400" />
+                  </span>
+                  <span>Contact Us</span>
                 </a>
               </li>
-              <li className="flex items-center gap-2 sm:gap-3">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-neutral-800 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Mail size={12} className="text-amber-400 sm:w-[14px] sm:h-[14px]" />
-                </div>
-                <a href="mailto:hello@boutique.com" className="hover:text-amber-400 transition-colors truncate">
-                  hello@boutique.com
+              <li>
+                <a href="mailto:hello@boutique.com" className="flex items-center gap-3 hover:text-amber-400 transition-colors">
+                  <span className="w-8 h-8 bg-neutral-800 rounded-full inline-flex items-center justify-center flex-shrink-0">
+                    <Mail size={14} className="text-amber-400" />
+                  </span>
+                  <span className="truncate">hello@boutique.com</span>
                 </a>
               </li>
             </ul>

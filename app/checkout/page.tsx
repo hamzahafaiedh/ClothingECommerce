@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Customer, Discount } from '@/types';
-import { MessageCircle, Tag, X, Shield, Truck, Clock } from 'lucide-react';
+import { MessageCircle, Mail, Tag, X, Shield, Truck, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { calculateDiscountCodeAmount } from '@/lib/pricing';
 import { motion } from 'framer-motion';
@@ -104,8 +104,6 @@ export default function CheckoutPage() {
 
   const createOrder = async () => {
     try {
-      setLoading(true);
-
       const { data: customer, error: customerError } = await supabase
         .from('customers')
         .insert([
@@ -180,8 +178,6 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error('Order creation error:', error);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -190,6 +186,13 @@ export default function CheckoutPage() {
       toast.error('Please fill in your name and phone number');
       return;
     }
+
+    if (!formData.address?.street || !formData.address?.city) {
+      toast.error('Please fill in your shipping address');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const orderId = await createOrder();
@@ -226,16 +229,82 @@ export default function CheckoutPage() {
       window.open(whatsappUrl, '_blank');
 
       toast.success('Order created! Redirecting to WhatsApp...');
-      setTimeout(() => {
-        router.push('/');
-      }, 2000);
+      router.push('/');
     } catch (error) {
       toast.error('Failed to create order. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleEmailCheckout = async () => {
+    if (!formData.full_name || !formData.phone) {
+      toast.error('Please fill in your name and phone number');
+      return;
+    }
+
+    if (!formData.address?.street || !formData.address?.city) {
+      toast.error('Please fill in your shipping address');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const orderId = await createOrder();
+
+      // Send email to store owner
+      const orderEmailData = {
+        orderId,
+        customer: {
+          full_name: formData.full_name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+        },
+        items: items.map((item) => ({
+          title: item.product.title,
+          variant: item.variant?.name,
+          quantity: item.quantity,
+          price: (item.variant?.price || item.product.price) * item.quantity,
+        })),
+        subtotal: total,
+        discount: appliedDiscount
+          ? { code: appliedDiscount.code, amount: discountAmount }
+          : undefined,
+        shipping: shippingCost,
+        total: grandTotal,
+        currency,
+      };
+
+      const response = await fetch('/api/send-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderEmailData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send email');
+      }
+
+      clearCart();
+      toast.success('Order placed successfully! We will contact you soon.');
+      router.push('/');
+    } catch (error) {
+      console.error('Email checkout error:', error);
+      toast.error('Failed to place order. Please try again or use WhatsApp.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (items.length === 0) {
+      router.push('/cart');
+    }
+  }, [items.length, router]);
+
   if (items.length === 0) {
-    router.push('/cart');
     return null;
   }
 
@@ -331,7 +400,7 @@ export default function CheckoutPage() {
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-neutral-300 mb-1.5 sm:mb-2">
-                  Street Address <span className="text-neutral-500">(optional)</span>
+                  Street Address *
                 </label>
                 <input
                   type="text"
@@ -339,13 +408,14 @@ export default function CheckoutPage() {
                   value={formData.address?.street}
                   onChange={handleInputChange}
                   className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-neutral-800 border border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-white placeholder-neutral-500 text-sm sm:text-base"
+                  required
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-neutral-300 mb-1.5 sm:mb-2">
-                    City <span className="text-neutral-500">(optional)</span>
+                    City *
                   </label>
                   <input
                     type="text"
@@ -353,6 +423,7 @@ export default function CheckoutPage() {
                     value={formData.address?.city}
                     onChange={handleInputChange}
                     className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-neutral-800 border border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-white placeholder-neutral-500 text-sm sm:text-base"
+                    required
                   />
                 </div>
 
@@ -471,9 +542,25 @@ export default function CheckoutPage() {
               <div className="space-y-2 sm:space-y-3">
                 <Button
                   size="lg"
+                  onClick={handleEmailCheckout}
+                  isLoading={loading}
+                  className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm sm:text-base"
+                >
+                  <Mail size={18} className="mr-2 sm:w-5 sm:h-5" />
+                  Place Order
+                </Button>
+                <div className="relative flex items-center justify-center py-1">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-neutral-700" />
+                  </div>
+                  <span className="relative bg-neutral-900/50 px-3 text-xs text-neutral-500">or</span>
+                </div>
+                <Button
+                  size="lg"
+                  variant="outline"
                   onClick={handleWhatsAppCheckout}
                   isLoading={loading}
-                  className="w-full bg-green-600 hover:bg-green-500 text-white font-bold text-sm sm:text-base"
+                  className="w-full border-green-600 text-green-500 hover:bg-green-600 hover:text-white font-bold text-sm sm:text-base"
                 >
                   <MessageCircle size={18} className="mr-2 sm:w-5 sm:h-5" />
                   Order via WhatsApp

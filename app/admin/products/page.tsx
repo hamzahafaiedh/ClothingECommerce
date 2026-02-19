@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/types';
-import { Plus, Edit, Trash2, Package, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, AlertTriangle, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
@@ -18,6 +18,16 @@ export default function AdminProductsPage() {
     product: null,
   });
   const [deleting, setDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredProducts = products.filter((product) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      product.title.toLowerCase().includes(query) ||
+      product.slug.toLowerCase().includes(query) ||
+      (product.category?.name?.toLowerCase().includes(query) ?? false)
+    );
+  });
 
   useEffect(() => {
     fetchProducts();
@@ -82,6 +92,20 @@ export default function AdminProductsPage() {
         </Link>
       </div>
 
+      {/* Search Box */}
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white"
+          />
+        </div>
+      </div>
+
       {loading ? (
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="p-6 space-y-4">
@@ -116,7 +140,7 @@ export default function AdminProductsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
-              {products.map((product) => {
+              {filteredProducts.map((product) => {
                 const totalStock = product.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
                 const isOutOfStock = product.variants && product.variants.length > 0
                   ? product.variants.every(v => v.stock === 0)
@@ -227,6 +251,13 @@ export default function AdminProductsPage() {
                   Add Your First Product
                 </Button>
               </Link>
+            </div>
+          )}
+
+          {products.length > 0 && filteredProducts.length === 0 && (
+            <div className="text-center py-12">
+              <Search size={48} className="mx-auto text-neutral-300 mb-4" />
+              <p className="text-neutral-600">No products match your search</p>
             </div>
           )}
         </div>

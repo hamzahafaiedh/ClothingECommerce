@@ -3,11 +3,53 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Order } from '@/types';
+import { Search, ShoppingBag, Calendar, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
+  const filteredOrders = orders.filter((order) => {
+    // Text search filter
+    const query = searchQuery.toLowerCase();
+    const matchesSearch =
+      order.id.toLowerCase().includes(query) ||
+      (order.customer?.full_name?.toLowerCase().includes(query) ?? false) ||
+      (order.customer?.phone?.toLowerCase().includes(query) ?? false) ||
+      (order.customer?.email?.toLowerCase().includes(query) ?? false);
+
+    // Date filter
+    const orderDate = new Date(order.created_at);
+    orderDate.setHours(0, 0, 0, 0);
+
+    let matchesDateFrom = true;
+    let matchesDateTo = true;
+
+    if (dateFrom) {
+      const fromDate = new Date(dateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      matchesDateFrom = orderDate >= fromDate;
+    }
+
+    if (dateTo) {
+      const toDate = new Date(dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      matchesDateTo = orderDate <= toDate;
+    }
+
+    return matchesSearch && matchesDateFrom && matchesDateTo;
+  });
+
+  const clearDateFilters = () => {
+    setDateFrom('');
+    setDateTo('');
+  };
+
+  const hasDateFilters = dateFrom || dateTo;
 
   useEffect(() => {
     fetchOrders();
@@ -67,6 +109,53 @@ export default function AdminOrdersPage() {
         Orders
       </h1>
 
+      {/* Filters */}
+      <div className="mb-6 space-y-4">
+        {/* Search Box */}
+        <div className="relative max-w-md">
+          <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+          <input
+            type="text"
+            placeholder="Search by order ID, customer name, phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white"
+          />
+        </div>
+
+        {/* Date Filter */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Calendar size={18} className="text-neutral-400" />
+            <span className="text-sm text-neutral-600">Filter by date:</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white text-sm"
+            />
+            <span className="text-neutral-400">to</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white text-sm"
+            />
+          </div>
+          {hasDateFilters && (
+            <button
+              onClick={clearDateFilters}
+              className="flex items-center gap-1 px-3 py-2 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+            >
+              <X size={16} />
+              Clear dates
+            </button>
+          )}
+        </div>
+      </div>
+
       {loading ? (
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="p-6 space-y-4">
@@ -101,7 +190,7 @@ export default function AdminOrdersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
-              {orders.map((order) => (
+              {filteredOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-neutral-50 transition-colors">
                   <td className="px-6 py-4">
                     <span className="font-mono text-sm text-neutral-600">
@@ -153,7 +242,23 @@ export default function AdminOrdersPage() {
 
           {orders.length === 0 && (
             <div className="text-center py-12">
+              <ShoppingBag size={48} className="mx-auto text-neutral-300 mb-4" />
               <p className="text-neutral-600">No orders yet</p>
+            </div>
+          )}
+
+          {orders.length > 0 && filteredOrders.length === 0 && (
+            <div className="text-center py-12">
+              <Search size={48} className="mx-auto text-neutral-300 mb-4" />
+              <p className="text-neutral-600">No orders match your filters</p>
+              {hasDateFilters && (
+                <button
+                  onClick={clearDateFilters}
+                  className="mt-2 text-sm text-amber-600 hover:text-amber-700"
+                >
+                  Clear date filters
+                </button>
+              )}
             </div>
           )}
         </div>

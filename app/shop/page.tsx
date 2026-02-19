@@ -325,11 +325,40 @@ function ShopContent() {
             {loading ? (
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-neutral-900 rounded-xl overflow-hidden border border-neutral-800">
-                    <div className="aspect-[3/4] bg-neutral-800 animate-pulse" />
-                    <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
-                      <div className="h-4 bg-neutral-800 rounded animate-pulse" />
-                      <div className="h-3 bg-neutral-800 rounded w-2/3 animate-pulse" />
+                  <div 
+                    key={i} 
+                    className="bg-neutral-900/50 backdrop-blur-sm rounded-lg sm:rounded-xl overflow-hidden border border-neutral-800"
+                  >
+                    {/* Image skeleton with shimmer */}
+                    <div className="relative aspect-[3/4] bg-neutral-800 overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-800 animate-shimmer" />
+                      {/* Fake badge skeleton */}
+                      <div className="absolute top-2 sm:top-3 right-2 sm:right-3 w-12 sm:w-16 h-5 sm:h-6 bg-neutral-700/50 rounded-full" />
+                    </div>
+                    {/* Content skeleton */}
+                    <div className="p-3 sm:p-4 lg:p-5 space-y-2 sm:space-y-3">
+                      {/* Title skeleton */}
+                      <div className="h-4 sm:h-5 bg-neutral-800 rounded-md w-3/4 overflow-hidden relative">
+                        <div className="absolute inset-0 bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-800 animate-shimmer" />
+                      </div>
+                      {/* Description skeleton - hidden on mobile */}
+                      <div className="hidden sm:block space-y-2">
+                        <div className="h-3 bg-neutral-800 rounded-md w-full overflow-hidden relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-800 animate-shimmer" />
+                        </div>
+                        <div className="h-3 bg-neutral-800 rounded-md w-2/3 overflow-hidden relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-800 animate-shimmer" />
+                        </div>
+                      </div>
+                      {/* Price and variants skeleton */}
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <div className="h-5 sm:h-6 bg-neutral-800 rounded-md w-20 sm:w-24 overflow-hidden relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-800 animate-shimmer" />
+                        </div>
+                        <div className="h-4 sm:h-5 bg-neutral-800 rounded w-12 sm:w-14 overflow-hidden relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-800 animate-shimmer" />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Plus, Edit, Trash2, Tag, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, Tag, AlertTriangle, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
@@ -29,6 +29,16 @@ export default function AdminCategoriesPage() {
   const [formData, setFormData] = useState({ name: '', slug: '', description: '' });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredCategories = categories.filter((category) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      category.name.toLowerCase().includes(query) ||
+      category.slug.toLowerCase().includes(query) ||
+      (category.description?.toLowerCase().includes(query) ?? false)
+    );
+  });
 
   useEffect(() => {
     fetchCategories();
@@ -169,6 +179,20 @@ export default function AdminCategoriesPage() {
         </Button>
       </div>
 
+      {/* Search Box */}
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+          <input
+            type="text"
+            placeholder="Search categories..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white"
+          />
+        </div>
+      </div>
+
       {loading ? (
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="p-6 space-y-4">
@@ -197,7 +221,7 @@ export default function AdminCategoriesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
-              {categories.map((category) => (
+              {filteredCategories.map((category) => (
                 <tr key={category.id} className="hover:bg-neutral-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
@@ -244,6 +268,13 @@ export default function AdminCategoriesPage() {
                 <Plus size={20} className="mr-2" />
                 Add Your First Category
               </Button>
+            </div>
+          )}
+
+          {categories.length > 0 && filteredCategories.length === 0 && (
+            <div className="text-center py-12">
+              <Search size={48} className="mx-auto text-neutral-300 mb-4" />
+              <p className="text-neutral-600">No categories match your search</p>
             </div>
           )}
         </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Discount } from '@/types';
-import { Plus, Edit, Trash2, Percent, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, Percent, AlertTriangle, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
@@ -30,6 +30,15 @@ export default function AdminDiscountsPage() {
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredDiscounts = discounts.filter((discount) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      (discount.code?.toLowerCase().includes(query) ?? false) ||
+      (discount.description?.toLowerCase().includes(query) ?? false)
+    );
+  });
 
   useEffect(() => {
     fetchDiscounts();
@@ -179,6 +188,20 @@ export default function AdminDiscountsPage() {
         </Button>
       </div>
 
+      {/* Search Box */}
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+          <input
+            type="text"
+            placeholder="Search discounts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white"
+          />
+        </div>
+      </div>
+
       {loading ? (
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="p-6 space-y-4">
@@ -213,7 +236,7 @@ export default function AdminDiscountsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
-              {discounts.map((discount) => (
+              {filteredDiscounts.map((discount) => (
                 <tr key={discount.id} className="hover:bg-neutral-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
@@ -286,6 +309,13 @@ export default function AdminDiscountsPage() {
                 <Plus size={20} className="mr-2" />
                 Add Your First Discount
               </Button>
+            </div>
+          )}
+
+          {discounts.length > 0 && filteredDiscounts.length === 0 && (
+            <div className="text-center py-12">
+              <Search size={48} className="mx-auto text-neutral-300 mb-4" />
+              <p className="text-neutral-600">No discounts match your search</p>
             </div>
           )}
         </div>

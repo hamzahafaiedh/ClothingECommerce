@@ -56,9 +56,9 @@ export function Header() {
         : 'bg-transparent'
     }`}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14 sm:h-16">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="text-xl sm:text-2xl font-display font-bold text-white hover:text-amber-400 transition-colors">
+          <Link href="/" className="flex items-center text-xl sm:text-2xl font-display font-bold text-white hover:text-amber-400 transition-colors leading-none">
             {process.env.NEXT_PUBLIC_SITE_NAME || 'BOUTIQUE'}
           </Link>
 
@@ -77,22 +77,22 @@ export function Header() {
           </div>
 
           {/* Right Side Icons */}
-          <div className="flex items-center space-x-3 sm:space-x-4">
+          <div className="flex items-center gap-5">
             <Link
               href="https://instagram.com"
               target="_blank"
-              className="text-neutral-300 hover:text-amber-400 transition-colors hidden sm:block"
+              className="hidden md:flex items-center justify-center text-neutral-300 hover:text-amber-400 transition-colors"
             >
-              <Instagram size={20} className="sm:w-[22px] sm:h-[22px]" />
+              <Instagram size={22} />
             </Link>
 
-            <Link href="/cart" className="relative text-neutral-300 hover:text-amber-400 transition-colors">
-              <ShoppingBag size={20} className="sm:w-[22px] sm:h-[22px]" />
+            <Link href="/cart" className="relative flex items-center justify-center text-neutral-300 hover:text-amber-400 transition-colors">
+              <ShoppingBag size={22} />
               {itemCount > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-1.5 sm:-top-2 -right-1.5 sm:-right-2 bg-amber-500 text-black text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold"
+                  className="absolute -top-2 -right-2 bg-amber-500 text-black text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold"
                 >
                   {itemCount}
                 </motion.span>
@@ -102,7 +102,7 @@ export function Header() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden text-neutral-300 hover:text-amber-400 transition-colors p-1"
+              className="md:hidden flex items-center justify-center text-neutral-300 hover:text-amber-400 transition-colors"
               aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             >
               {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
