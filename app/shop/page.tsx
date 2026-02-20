@@ -21,11 +21,12 @@ function ShopContent() {
     searchParams.get('gender')
   );
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
+  const showNewArrivals = searchParams.get('new_arrivals') === 'true';
 
   useEffect(() => {
     fetchCategories();
     fetchProducts();
-  }, [selectedCategory, selectedGender, sortBy]);
+  }, [selectedCategory, selectedGender, sortBy, showNewArrivals]);
 
   async function fetchCategories() {
     const { data } = await supabase
@@ -48,6 +49,11 @@ function ShopContent() {
         discount:discounts(*)
       `)
       .eq('active', true);
+
+    // Filter by new arrivals if requested
+    if (showNewArrivals) {
+      query = query.eq('is_new_arrival', true);
+    }
 
     if (selectedCategory) {
       query = query.eq('category_id', selectedCategory);
@@ -97,11 +103,11 @@ function ShopContent() {
             className="text-center"
           >
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white mb-2 sm:mb-4">
-              Shop Collection
+              {showNewArrivals ? 'New Arrivals' : 'Shop Collection'}
             </h1>
             <div className="w-16 sm:w-20 h-1 bg-amber-500 mx-auto mb-2 sm:mb-4" />
             <p className="text-neutral-300 text-sm sm:text-base lg:text-lg">
-              {products.length} products available
+              {products.length} {showNewArrivals ? 'new' : ''} products available
             </p>
           </motion.div>
         </div>

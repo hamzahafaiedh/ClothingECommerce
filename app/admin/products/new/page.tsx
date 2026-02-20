@@ -25,6 +25,7 @@ export default function NewProductPage() {
     discount_id: '',
     stock: '0',
     active: true,
+    is_new_arrival: false,
   });
   const [images, setImages] = useState<string[]>(['']);
   const [variants, setVariants] = useState<Array<{ name: string; price: string; stock: string }>>([
@@ -121,6 +122,7 @@ export default function NewProductPage() {
             discount_id: formData.discount_id || null,
             stock: parseInt(formData.stock) || 0,
             active: formData.active,
+            is_new_arrival: formData.is_new_arrival,
           },
         ])
         .select()

@@ -29,6 +29,7 @@ export default function EditProductPage() {
     discount_id: '',
     stock: '0',
     active: true,
+    is_new_arrival: false,
   });
   const [images, setImages] = useState<string[]>(['']);
   const [variants, setVariants] = useState<Array<{ id?: string; name: string; price: string; stock: string }>>([
@@ -94,6 +95,7 @@ export default function EditProductPage() {
       discount_id: data.discount_id || '',
       stock: data.stock?.toString() || '0',
       active: data.active,
+      is_new_arrival: data.is_new_arrival || false,
     });
 
     if (data.images && data.images.length > 0) {
@@ -173,6 +175,7 @@ export default function EditProductPage() {
           discount_id: formData.discount_id || null,
           stock: parseInt(formData.stock) || 0,
           active: formData.active,
+          is_new_arrival: formData.is_new_arrival,
         })
         .eq('id', productId);
 
@@ -440,19 +443,36 @@ export default function EditProductPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="active"
-                checked={formData.active}
-                onChange={(e) =>
-                  setFormData({ ...formData, active: e.target.checked })
-                }
-                className="w-4 h-4 text-neutral-900 border-neutral-300 rounded focus:ring-neutral-900"
-              />
-              <label htmlFor="active" className="text-sm text-neutral-700">
-                Active (visible in store)
-              </label>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="active"
+                  checked={formData.active}
+                  onChange={(e) =>
+                    setFormData({ ...formData, active: e.target.checked })
+                  }
+                  className="w-4 h-4 text-neutral-900 border-neutral-300 rounded focus:ring-neutral-900"
+                />
+                <label htmlFor="active" className="text-sm text-neutral-700">
+                  Active (visible in store)
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="is_new_arrival"
+                  checked={formData.is_new_arrival}
+                  onChange={(e) =>
+                    setFormData({ ...formData, is_new_arrival: e.target.checked })
+                  }
+                  className="w-4 h-4 text-amber-500 border-neutral-300 rounded focus:ring-amber-500"
+                />
+                <label htmlFor="is_new_arrival" className="text-sm text-neutral-700">
+                  <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs font-medium mr-1">NEW</span>
+                  Mark as New Arrival
+                </label>
+              </div>
             </div>
           </div>
         </div>

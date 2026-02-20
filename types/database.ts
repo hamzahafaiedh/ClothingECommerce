@@ -47,6 +47,7 @@ export interface Database {
           gender: string | null
           stock: number
           active: boolean
+          is_new_arrival: boolean
           metadata: Json
           created_at: string
           updated_at: string
@@ -62,6 +63,7 @@ export interface Database {
           gender?: string | null
           stock?: number
           active?: boolean
+          is_new_arrival?: boolean
           metadata?: Json
           created_at?: string
           updated_at?: string
@@ -77,6 +79,7 @@ export interface Database {
           gender?: string | null
           stock?: number
           active?: boolean
+          is_new_arrival?: boolean
           metadata?: Json
           created_at?: string
           updated_at?: string

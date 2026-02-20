@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Package, ShoppingCart, LayoutDashboard, Settings, Tag, Percent, LogOut } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -14,18 +14,33 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const authCheckRef = useRef(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
+    // Prevent duplicate auth checks
+    if (authCheckRef.current) return;
+    authCheckRef.current = true;
+
     checkAuth();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_OUT' || !session) {
-          router.push('/admin/login');
-        } else {
-          await checkAuth();
+          setUser(null);
+          if (pathname !== '/admin/login') {
+            router.push('/admin/login');
+          }
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          setUser(session.user);
         }
       }
     );
@@ -33,23 +48,27 @@ export default function AdminLayout({
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [mounted, pathname]);
 
   const checkAuth = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        router.push('/admin/login');
+        if (pathname !== '/admin/login') {
+          router.push('/admin/login');
+        }
         return;
       }
 
       setUser(user);
     } catch (error) {
       console.error('Auth check error:', error);
-      router.push('/admin/login');
+      if (pathname !== '/admin/login') {
+        router.push('/admin/login');
+      }
     } finally {
-      setLoading(false);
+      setAuthChecked(true);
     }
   };
 
@@ -64,8 +83,8 @@ export default function AdminLayout({
     return <>{children}</>;
   }
 
-  // Show loading state while checking auth
-  if (loading) {
+  // Show loading state while checking auth (prevents blank page)
+  if (!mounted || !authChecked) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
@@ -76,9 +95,16 @@ export default function AdminLayout({
     );
   }
 
-  // Don't render layout if not authenticated
+  // Redirect if not authenticated (but still show loading to prevent flash)
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-neutral-900 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-neutral-600">Redirecting...</p>
+        </div>
+      </div>
+    );
   }
 
   const navigation = [

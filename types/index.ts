@@ -10,6 +10,7 @@ export interface Product {
   gender: string | null;
   discount_id: string | null;
   active: boolean;
+  is_new_arrival: boolean;
   metadata: Record<string, any>;
   created_at: string;
   updated_at: string;

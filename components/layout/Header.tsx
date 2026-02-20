@@ -9,7 +9,13 @@ import { useCartStore } from '@/store/cart';
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const itemCount = useCartStore((state) => state.getItemCount());
+
+  // Prevent hydration mismatch by only showing cart count after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,7 +50,7 @@ export function Header() {
 
   const navigation = [
     { name: 'Shop', href: '/shop' },
-    { name: 'New Arrivals', href: '/shop?sort=newest' },
+    { name: 'New Arrivals', href: '/shop?new_arrivals=true' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
   ];
@@ -88,7 +94,7 @@ export function Header() {
 
             <Link href="/cart" className="relative flex items-center justify-center text-neutral-300 hover:text-amber-400 transition-colors">
               <ShoppingBag size={22} />
-              {itemCount > 0 && (
+              {mounted && itemCount > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
